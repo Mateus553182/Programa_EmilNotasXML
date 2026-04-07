@@ -1,0 +1,434 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap');
+
+:root {
+  --bg: #eceff3;
+  --bg-soft: #f8fafc;
+  --text: #1f2836;
+  --muted: #5a6578;
+  --topbar: #2f3742;
+  --action: #15abc8;
+  --action-soft: #1bc0e1;
+  --banner-overlay: rgba(32, 40, 55, 0.58);
+  --card: #ffffff;
+  --border: #d9dee7;
+  --danger: #9d0208;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Archivo', sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--bg-soft) 0, var(--bg) 40%, var(--bg) 100%);
+}
+
+.container {
+  width: min(1120px, 95vw);
+  margin: 1rem auto 2.4rem;
+  display: grid;
+  gap: 1rem;
+  animation: rise 450ms ease;
+}
+
+.auth-container {
+  min-height: 0;
+  place-items: start stretch;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: none;
+  padding: 1rem;
+}
+
+.subtitle-auth {
+  margin-top: 0.35rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.auth-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.topbar {
+  background: var(--topbar);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.topbar-inner {
+  width: min(1120px, 95vw);
+  margin: 0 auto;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #f7fbff;
+  font-size: 1.95rem;
+  font-weight: 600;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+h1,
+h2 {
+  font-family: 'Archivo', sans-serif;
+  margin: 0;
+}
+
+.top-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: var(--action);
+  color: #fff;
+  border-radius: 4px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 3px 10px rgba(32, 42, 61, 0.08);
+}
+
+.landing {
+  display: grid;
+  gap: 1rem;
+}
+
+.banner {
+  position: relative;
+  min-height: 280px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: grid;
+  align-content: center;
+  padding: 2rem;
+  color: #fff;
+  background: linear-gradient(var(--banner-overlay), var(--banner-overlay)),
+    linear-gradient(120deg, #3f6ca8, #203556 54%, #6d7e95 100%);
+}
+
+.xml-banner {
+  background: linear-gradient(var(--banner-overlay), var(--banner-overlay)),
+    url('/banner-notas.svg') center / cover no-repeat;
+}
+
+.banner h1 {
+  font-size: clamp(2.1rem, 4.2vw, 3.4rem);
+  margin-bottom: 0.5rem;
+}
+
+.banner p {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: clamp(1.02rem, 2vw, 1.45rem);
+  max-width: 780px;
+}
+
+.banner-btn {
+  width: fit-content;
+  padding: 0.7rem 1.05rem;
+  border-radius: 5px;
+  border: 0;
+  background: #0b71eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.info-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.info-card h2 {
+  font-size: 2.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.info-card p {
+  margin: 0;
+  color: #2d3a4d;
+  line-height: 1.45;
+}
+
+.upload-form,
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+input,
+button {
+  font: inherit;
+  border-radius: 4px;
+}
+
+input {
+  border: 1px solid var(--border);
+  padding: 0.65rem 0.7rem;
+  min-width: 180px;
+}
+
+button {
+  border: 0;
+  padding: 0.65rem 0.9rem;
+  background: var(--action);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+button.secondary {
+  background: #748196;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.message {
+  min-height: 1.2rem;
+  color: var(--muted);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+th,
+td {
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.35rem;
+  font-size: 0.92rem;
+}
+
+td.actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+td.actions button.delete {
+  background: var(--danger);
+}
+
+.session-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #f1f6fd;
+}
+
+.hidden {
+  display: none;
+}
+
+.page-footer {
+  border-top: 1px solid var(--border);
+  padding: 1rem 0;
+  color: #2d3a4d;
+}
+
+.acesso-page {
+  position: relative;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 64px 0 0 0;
+  background: rgba(18, 24, 34, 0.52);
+  display: grid;
+  place-items: start center;
+  padding-top: 24px;
+  z-index: 20;
+}
+
+.login-modal {
+  width: min(640px, 94vw);
+  padding: 0;
+  border-radius: 5px;
+}
+
+.login-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding: 0.95rem 1rem;
+}
+
+.login-modal-header h2 {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.close-x {
+  color: #818991;
+  text-decoration: none;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.login-modal-form {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 0.85rem 1rem;
+  align-items: center;
+}
+
+.login-modal-form label {
+  font-size: 0.95rem;
+  color: #2f394a;
+}
+
+.login-modal-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+.btn-secondary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  background: #6e7a89;
+  color: #fff;
+  border-radius: 4px;
+  padding: 0.65rem 0.9rem;
+}
+
+.login-modal .message {
+  padding: 0 1rem 1rem;
+  margin: 0;
+}
+
+#appSection {
+  display: grid;
+  gap: 1rem;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .container {
+    margin-top: 0.8rem;
+  }
+
+  .topbar-inner {
+    height: auto;
+    padding: 0.55rem 0;
+    flex-wrap: wrap;
+  }
+
+  .modal-backdrop {
+    inset: 86px 0 0 0;
+    padding-top: 10px;
+  }
+
+  .login-modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .login-modal-form {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .login-modal-actions {
+    justify-content: stretch;
+  }
+
+  .btn-secondary-link {
+    width: 100%;
+  }
+
+  .brand {
+    font-size: 1.45rem;
+  }
+
+  .banner {
+    min-height: 230px;
+    padding: 1.15rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-card h2 {
+    font-size: 1.8rem;
+  }
+
+  input,
+  button {
+    width: 100%;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "companies": [
+    {
+      "id": "empresa-demo-1",
+      "code": "emil-demo",
+      "name": "Empresa Demo Emil",
+      "users": [
+        {
+          "username": "admin",
+          "password": "123456",
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "empresa-teste-1",
+      "code": "xml-teste",
+      "name": "Empresa Teste XML",
+      "users": [
+        {
+          "username": "teste",
+          "password": "teste123",
+          "active": true
+        }
+      ],
+      "active": true
+    }
+  ]
+}

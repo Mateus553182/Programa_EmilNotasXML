@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f3742" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Emil Notas XML - Painel</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <img class="brand-logo" src="/logo-emil.svg" alt="Logo Emil" />
+          <span>NotasXML</span>
+        </div>
+        <div id="sessionInfo" class="session-info">
+          <span id="companyName"></span>
+          <button id="logoutBtn" type="button" class="top-btn">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>Enviar XML</h2>
+        <form id="uploadForm" class="upload-form">
+          <input id="xmlInput" type="file" accept=".xml,.txt,text/xml,application/xml" required />
+          <button type="submit">Enviar nota</button>
+        </form>
+        <p id="uploadMessage" class="message"></p>
+      </section>
+
+      <section class="card">
+        <h2>Filtros</h2>
+        <form id="filterForm" class="filters">
+          <input id="filtroChave" type="text" placeholder="Chave" />
+          <input id="filtroNumero" type="text" placeholder="Numero" />
+          <input id="filtroCnpj" type="text" placeholder="CNPJ emitente" />
+          <button type="submit">Buscar</button>
+          <button type="button" id="limparFiltros" class="secondary">Limpar</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="table-header">
+          <h2>Notas cadastradas</h2>
+          <button id="atualizar">Atualizar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Numero</th>
+                <th>Serie</th>
+                <th>CNPJ emitente</th>
+                <th>Razao emitente</th>
+                <th>Valor</th>
+                <th>Upload</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="notasBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/dashboard.js"></script>
+  </body>
+</html>

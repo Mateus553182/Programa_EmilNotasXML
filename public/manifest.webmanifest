@@ -1,0 +1,10 @@
+{
+  "name": "Emil Notas XML",
+  "short_name": "NotasXML",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#f2f6ef",
+  "theme_color": "#1b4332",
+  "description": "Sistema para armazenamento e consulta de XML de notas fiscais",
+  "icons": []
+}

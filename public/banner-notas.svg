@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-label="Banner de notas XML">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b355c"/>
+      <stop offset="1" stop-color="#354e74"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e8eef8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="360" fill="url(#bg)"/>
+
+  <g opacity="0.12" fill="#b9d0f5">
+    <circle cx="120" cy="70" r="34"/>
+    <circle cx="1080" cy="50" r="48"/>
+    <circle cx="1040" cy="300" r="58"/>
+    <circle cx="250" cy="310" r="44"/>
+  </g>
+
+  <g transform="translate(710 66)">
+    <rect x="0" y="0" width="380" height="250" rx="10" fill="#132746" opacity="0.5"/>
+
+    <g transform="translate(32 28)">
+      <rect width="136" height="180" rx="8" fill="url(#paper)"/>
+      <rect x="18" y="22" width="74" height="8" rx="4" fill="#88a4d8"/>
+      <rect x="18" y="44" width="96" height="8" rx="4" fill="#c1d1ef"/>
+      <rect x="18" y="66" width="92" height="8" rx="4" fill="#c1d1ef"/>
+      <rect x="18" y="88" width="82" height="8" rx="4" fill="#c1d1ef"/>
+      <rect x="18" y="120" width="52" height="34" rx="6" fill="#2ca6ce"/>
+      <text x="26" y="142" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">XML</text>
+    </g>
+
+    <g transform="translate(196 42)">
+      <rect width="148" height="208" rx="8" fill="url(#paper)"/>
+      <rect x="18" y="22" width="96" height="8" rx="4" fill="#88a4d8"/>
+      <rect x="18" y="44" width="108" height="8" rx="4" fill="#c1d1ef"/>
+      <rect x="18" y="66" width="104" height="8" rx="4" fill="#c1d1ef"/>
+      <rect x="18" y="88" width="82" height="8" rx="4" fill="#c1d1ef"/>
+      <rect x="18" y="120" width="58" height="34" rx="6" fill="#1a89bf"/>
+      <text x="27" y="142" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">NFe</text>
+    </g>
+  </g>
+</svg>
