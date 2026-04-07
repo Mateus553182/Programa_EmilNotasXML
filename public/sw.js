@@ -13,6 +13,7 @@ const OFFLINE_URLS = [
   '/manifest.webmanifest',
   '/logo-emil.svg',
   '/logo-emil-nova.png',
+  '/logo-emil-nova.jpeg',
 ];
 
 self.addEventListener('install', (event) => {

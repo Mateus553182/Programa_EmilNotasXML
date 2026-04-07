@@ -65,7 +65,7 @@ body {
 .topbar-inner {
   width: min(1120px, 95vw);
   margin: 0 auto;
-  height: 64px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -82,12 +82,15 @@ body {
 }
 
 .brand-logo {
-  height: 42px;
   width: auto;
-  max-width: 150px;
+  height: 80px;
+  max-width: 280px;
   object-fit: contain;
   border-radius: 0;
   flex-shrink: 0;
+  filter: brightness(1.22) saturate(1.12)
+    drop-shadow(0 1px 1px rgba(255, 255, 255, 0.18))
+    drop-shadow(0 0 7px rgba(35, 160, 255, 0.28));
 }
 
 h1,
@@ -412,8 +415,9 @@ td.actions button.delete {
   }
 
   .brand-logo {
-    height: 34px;
-    max-width: 120px;
+    width: auto;
+    height: 60px;
+    max-width: 210px;
   }
 
   .banner {
