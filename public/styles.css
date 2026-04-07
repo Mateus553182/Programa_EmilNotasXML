@@ -82,10 +82,12 @@ body {
 }
 
 .brand-logo {
-  width: 44px;
-  height: 44px;
+  height: 42px;
+  width: auto;
+  max-width: 150px;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: 0;
+  flex-shrink: 0;
 }
 
 h1,
@@ -407,6 +409,11 @@ td.actions button.delete {
 
   .brand {
     font-size: 1.45rem;
+  }
+
+  .brand-logo {
+    height: 34px;
+    max-width: 120px;
   }
 
   .banner {

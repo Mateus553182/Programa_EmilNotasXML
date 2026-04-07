@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emil-notas-xml-v14';
+const CACHE_NAME = 'emil-notas-xml-v15';
 const OFFLINE_URLS = [
   '/',
   '/login',
@@ -12,6 +12,7 @@ const OFFLINE_URLS = [
   '/dashboard.js',
   '/manifest.webmanifest',
   '/logo-emil.svg',
+  '/logo-emil-nova.png',
 ];
 
 self.addEventListener('install', (event) => {
