@@ -36,6 +36,11 @@ async function listNotes(companyId, filters = {}) {
   const indexData = await readIndex();
   let result = indexData.notes.filter((item) => item.companyId === companyId);
 
+  if (filters.notaName) {
+    const notaName = String(filters.notaName).toLowerCase();
+    result = result.filter((item) => (item.notaName || '').toLowerCase().includes(notaName));
+  }
+
   if (filters.chave) {
     const chave = String(filters.chave).toLowerCase();
     result = result.filter((item) => (item.chave || '').toLowerCase().includes(chave));

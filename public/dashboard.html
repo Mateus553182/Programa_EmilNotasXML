@@ -26,6 +26,7 @@
       <section class="card">
         <h2>Enviar XML</h2>
         <form id="uploadForm" class="upload-form">
+          <input id="nomeNota" type="text" placeholder="Nome da nota (ex: Nota Fiscal dez/2025)" />
           <input id="xmlInput" type="file" accept=".xml,.txt,text/xml,application/xml" required />
           <button type="submit">Enviar nota</button>
         </form>
@@ -35,6 +36,7 @@
       <section class="card">
         <h2>Filtros</h2>
         <form id="filterForm" class="filters">
+          <input id="filtroNome" type="text" placeholder="Nome da nota" />
           <input id="filtroChave" type="text" placeholder="Chave" />
           <input id="filtroNumero" type="text" placeholder="Numero" />
           <input id="filtroCnpj" type="text" placeholder="CNPJ emitente" />
@@ -52,6 +54,7 @@
           <table>
             <thead>
               <tr>
+                <th>Nome da Nota</th>
                 <th>Numero</th>
                 <th>Serie</th>
                 <th>CNPJ emitente</th>

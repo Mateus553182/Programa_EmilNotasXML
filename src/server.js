@@ -155,6 +155,7 @@ app.post('/api/notas', authMiddleware, upload.single('xml'), async (req, res) =>
     }
 
     const fileName = req.file.originalname || '';
+    const notaName = (req.body.notaName || '').trim();
     let xmlText = normalizeXmlText(decodeXmlBuffer(req.file.buffer));
 
     // Fallback: some text editors save XML in UTF-16 LE without explicit BOM.
@@ -203,6 +204,7 @@ app.post('/api/notas', authMiddleware, upload.single('xml'), async (req, res) =>
     const note = {
       id,
       companyId: req.auth.companyId,
+      notaName,
       ...metadata,
       fileName,
       xmlPath,

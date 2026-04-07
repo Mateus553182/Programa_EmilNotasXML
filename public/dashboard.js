@@ -4,10 +4,12 @@ const companyName = document.getElementById('companyName');
 const logoutBtn = document.getElementById('logoutBtn');
 
 const uploadForm = document.getElementById('uploadForm');
+const nomeNota = document.getElementById('nomeNota');
 const xmlInput = document.getElementById('xmlInput');
 const uploadMessage = document.getElementById('uploadMessage');
 const notasBody = document.getElementById('notasBody');
 const filterForm = document.getElementById('filterForm');
+const filtroNome = document.getElementById('filtroNome');
 const filtroChave = document.getElementById('filtroChave');
 const filtroNumero = document.getElementById('filtroNumero');
 const filtroCnpj = document.getElementById('filtroCnpj');
@@ -89,6 +91,7 @@ async function downloadNote(note) {
 function buildRow(note) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
+    <td>${note.notaName || '-'}</td>
     <td>${note.numero || '-'}</td>
     <td>${note.serie || '-'}</td>
     <td>${note.cnpjEmitente || '-'}</td>
@@ -156,10 +159,12 @@ uploadForm.addEventListener('submit', async (event) => {
   uploadMessage.textContent = 'Enviando...';
   const formData = new FormData();
   formData.append('xml', xmlInput.files[0]);
+  formData.append('notaName', nomeNota.value.trim());
 
   try {
     const savedNote = await request('/api/notas', { method: 'POST', body: formData });
     uploadMessage.textContent = savedNote.parseWarning || 'XML enviado com sucesso.';
+    nomeNota.value = '';
     xmlInput.value = '';
     await loadNotes();
   } catch (error) {
@@ -170,6 +175,7 @@ uploadForm.addEventListener('submit', async (event) => {
 filterForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   activeFilters = {
+    notaName: filtroNome.value.trim(),
     chave: filtroChave.value.trim(),
     numero: filtroNumero.value.trim(),
     cnpjEmitente: filtroCnpj.value.trim(),
@@ -178,6 +184,7 @@ filterForm.addEventListener('submit', async (event) => {
 });
 
 limparFiltros.addEventListener('click', async () => {
+  filtroNome.value = '';
   filtroChave.value = '';
   filtroNumero.value = '';
   filtroCnpj.value = '';
