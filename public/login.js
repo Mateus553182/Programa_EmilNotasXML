@@ -46,9 +46,19 @@ async function bootstrapSession() {
   if (!authToken) return;
 
   try {
-    await request('/api/auth/me');
-    window.location.href = '/dashboard';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const headers = getAuthHeaders();
+    const response = await fetch('/api/auth/me', { headers, signal: controller.signal });
+    clearTimeout(timeout);
+    if (response.ok) {
+      window.location.href = '/dashboard';
+    } else {
+      authToken = '';
+      localStorage.removeItem(TOKEN_KEY);
+    }
   } catch {
+    // Server unreachable or timeout — stay on current page, clear stale token.
     authToken = '';
     localStorage.removeItem(TOKEN_KEY);
   }

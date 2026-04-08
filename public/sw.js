@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emil-notas-xml-v16';
+const CACHE_NAME = 'emil-notas-xml-v17';
 const OFFLINE_URLS = [
   '/',
   '/login',
@@ -47,7 +47,18 @@ self.addEventListener('fetch', (event) => {
   // Always try network first for HTML navigations to avoid stale UI after deploys.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/login') || caches.match('/login.html'))
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() =>
+          caches.match(request)
+            .then((cached) => cached || caches.match('/login.html'))
+            .then((cached) => cached || caches.match('/login'))
+            .then((cached) => cached || new Response('Offline - recarregue a pagina', { status: 503, headers: { 'Content-Type': 'text/html;charset=utf-8' } }))
+        )
     );
     return;
   }
