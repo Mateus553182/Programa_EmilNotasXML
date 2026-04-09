@@ -41,6 +41,14 @@ async function listNotes(companyId, filters = {}) {
     result = result.filter((item) => (item.notaName || '').toLowerCase().includes(notaName));
   }
 
+  if (filters.fornecedor) {
+    const term = String(filters.fornecedor).toLowerCase();
+    result = result.filter((item) =>
+      (item.razaoEmitente || '').toLowerCase().includes(term) ||
+      String(item.cnpjEmitente || '').toLowerCase().includes(term)
+    );
+  }
+
   if (filters.chave) {
     const chave = String(filters.chave).toLowerCase();
     result = result.filter((item) => (item.chave || '').toLowerCase().includes(chave));
@@ -51,9 +59,21 @@ async function listNotes(companyId, filters = {}) {
     result = result.filter((item) => String(item.numero || '').toLowerCase().includes(numero));
   }
 
-  if (filters.cnpjEmitente) {
-    const cnpj = String(filters.cnpjEmitente).toLowerCase();
-    result = result.filter((item) => (item.cnpjEmitente || '').toLowerCase().includes(cnpj));
+  if (filters.dataDe) {
+    const de = new Date(filters.dataDe);
+    result = result.filter((item) => {
+      const d = new Date(item.emissao || item.uploadedAt);
+      return d >= de;
+    });
+  }
+
+  if (filters.dataAte) {
+    const ate = new Date(filters.dataAte);
+    ate.setHours(23, 59, 59, 999);
+    result = result.filter((item) => {
+      const d = new Date(item.emissao || item.uploadedAt);
+      return d <= ate;
+    });
   }
 
   return result;

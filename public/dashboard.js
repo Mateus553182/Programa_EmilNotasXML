@@ -10,9 +10,11 @@ const uploadMessage = document.getElementById('uploadMessage');
 const notasBody = document.getElementById('notasBody');
 const filterForm = document.getElementById('filterForm');
 const filtroNome = document.getElementById('filtroNome');
-const filtroChave = document.getElementById('filtroChave');
+const filtroFornecedor = document.getElementById('filtroFornecedor');
 const filtroNumero = document.getElementById('filtroNumero');
-const filtroCnpj = document.getElementById('filtroCnpj');
+const filtroChave = document.getElementById('filtroChave');
+const filtroDataDe = document.getElementById('filtroDataDe');
+const filtroDataAte = document.getElementById('filtroDataAte');
 const limparFiltros = document.getElementById('limparFiltros');
 const atualizarBtn = document.getElementById('atualizar');
 
@@ -132,19 +134,19 @@ function buildRow(note) {
 }
 
 async function loadNotes() {
-  notasBody.innerHTML = '<tr><td colspan="7">Carregando...</td></tr>';
+  notasBody.innerHTML = '<tr><td colspan="8">Carregando...</td></tr>';
 
   try {
     const notes = await request(`/api/notas${makeQuery(activeFilters)}`);
     if (!notes.length) {
-      notasBody.innerHTML = '<tr><td colspan="7">Nenhuma nota encontrada.</td></tr>';
+      notasBody.innerHTML = '<tr><td colspan="8">Nenhuma nota encontrada.</td></tr>';
       return;
     }
 
     notasBody.innerHTML = '';
     notes.forEach((note) => notasBody.appendChild(buildRow(note)));
   } catch (error) {
-    notasBody.innerHTML = `<tr><td colspan="7">${error.message}</td></tr>`;
+    notasBody.innerHTML = `<tr><td colspan="8">${error.message}</td></tr>`;
   }
 }
 
@@ -176,18 +178,22 @@ filterForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   activeFilters = {
     notaName: filtroNome.value.trim(),
-    chave: filtroChave.value.trim(),
+    fornecedor: filtroFornecedor.value.trim(),
     numero: filtroNumero.value.trim(),
-    cnpjEmitente: filtroCnpj.value.trim(),
+    chave: filtroChave.value.trim(),
+    dataDe: filtroDataDe.value,
+    dataAte: filtroDataAte.value,
   };
   await loadNotes();
 });
 
 limparFiltros.addEventListener('click', async () => {
   filtroNome.value = '';
-  filtroChave.value = '';
+  filtroFornecedor.value = '';
   filtroNumero.value = '';
-  filtroCnpj.value = '';
+  filtroChave.value = '';
+  filtroDataDe.value = '';
+  filtroDataAte.value = '';
   activeFilters = {};
   await loadNotes();
 });
