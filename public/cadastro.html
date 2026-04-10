@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f3742" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Emil Notas XML - Cadastro</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <img class="brand-logo" src="/logo-emil-nova.png" alt="Logo Emil" />
+          <span>NotasXML</span>
+        </div>
+        <div class="topbar-actions">
+          <a class="top-btn" href="/acesso?forceLogin=1">Já tenho conta</a>
+          <a class="top-btn secondary" href="/login">Voltar</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card cadastro-card">
+        <h2>Cadastre-se</h2>
+        <p class="subtitle-auth">Preencha os dados abaixo para solicitar acesso ao sistema.</p>
+
+        <form id="cadastroForm" class="cadastro-form">
+          <label for="nomeEmpresa">Nome da empresa:</label>
+          <input id="nomeEmpresa" type="text" placeholder="Ex: Empresa ABC Ltda" required />
+
+          <label for="cnpj">CNPJ:</label>
+          <input id="cnpj" type="text" placeholder="00.000.000/0000-00" required />
+
+          <label for="responsavel">Nome do responsável:</label>
+          <input id="responsavel" type="text" placeholder="Nome completo" required />
+
+          <label for="email">E-mail:</label>
+          <input id="email" type="email" placeholder="contato@empresa.com" required />
+
+          <label for="telefone">Telefone:</label>
+          <input id="telefone" type="tel" placeholder="(00) 00000-0000" required />
+
+          <div class="cadastro-actions">
+            <button type="submit">Enviar cadastro</button>
+          </div>
+        </form>
+        <p id="cadastroMessage" class="message"></p>
+      </section>
+    </main>
+
+    <footer class="page-footer container">&copy; 2026 - Emil Informatica</footer>
+  </body>
+</html>

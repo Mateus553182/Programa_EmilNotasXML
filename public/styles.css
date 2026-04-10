@@ -99,6 +99,12 @@ h2 {
   margin: 0;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .top-btn {
   display: inline-flex;
   align-items: center;
@@ -111,6 +117,12 @@ h2 {
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.top-btn.secondary {
+  background: transparent;
+  border: 1px solid var(--action);
+  color: var(--action);
 }
 
 .card {
@@ -193,9 +205,19 @@ h2 {
 .upload-form,
 .filters {
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.filter-row {
+  display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
+}
+
+.filter-row input[type="text"] {
+  flex: 1 1 180px;
 }
 
 .filter-date-label {
@@ -204,6 +226,11 @@ h2 {
   gap: 0.4rem;
   font-size: 0.9rem;
   color: var(--text);
+  white-space: nowrap;
+}
+
+.filter-date-label input[type="date"] {
+  min-width: 150px;
 }
 
 input,
@@ -291,6 +318,81 @@ td.actions button.delete {
   border-top: 1px solid var(--border);
   padding: 1rem 0;
   color: #2d3a4d;
+}
+
+/* info-card icons */
+.info-icon {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.35rem;
+}
+
+/* 4-column info grid variant */
+.info-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* CTA section */
+.cta-section {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, #203556, #2f3742);
+  border-radius: 6px;
+  color: #fff;
+}
+
+.cta-section h2 {
+  font-size: 1.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.cta-section p {
+  margin: 0 0 1.2rem;
+  font-size: 1.05rem;
+  color: #c8d5e6;
+}
+
+.cta-btn {
+  display: inline-block;
+  padding: 0.75rem 1.6rem;
+  background: var(--action);
+  color: #fff;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.05rem;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.cta-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.92;
+}
+
+/* Cadastro page */
+.cadastro-card {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.cadastro-form {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 0.85rem 1rem;
+  align-items: center;
+}
+
+.cadastro-form label {
+  font-size: 0.95rem;
+  text-align: right;
+}
+
+.cadastro-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .acesso-page {

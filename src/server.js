@@ -252,6 +252,10 @@ app.get('/acesso', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'acesso.html'));
 });
 
+app.get('/cadastro', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'cadastro.html'));
+});
+
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
 });

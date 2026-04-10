@@ -36,14 +36,18 @@
       <section class="card">
         <h2>Filtros</h2>
         <form id="filterForm" class="filters">
-          <input id="filtroNome" type="text" placeholder="Nome da nota" />
-          <input id="filtroFornecedor" type="text" placeholder="Fornecedor (razao ou CNPJ)" />
-          <input id="filtroNumero" type="text" placeholder="Numero da NF-e" />
-          <input id="filtroChave" type="text" placeholder="Chave de acesso" />
-          <label class="filter-date-label">De: <input id="filtroDataDe" type="date" /></label>
-          <label class="filter-date-label">Ate: <input id="filtroDataAte" type="date" /></label>
-          <button type="submit">Buscar</button>
-          <button type="button" id="limparFiltros" class="secondary">Limpar</button>
+          <div class="filter-row">
+            <input id="filtroNome" type="text" placeholder="Nome da nota" />
+            <input id="filtroNumero" type="text" placeholder="Numero da NF-e" />
+            <input id="filtroChave" type="text" placeholder="Chave de acesso" />
+            <input id="filtroFornecedor" type="text" placeholder="Fornecedor (razao ou CNPJ)" />
+          </div>
+          <div class="filter-row">
+            <label class="filter-date-label">De: <input id="filtroDataDe" type="date" /></label>
+            <label class="filter-date-label">Ate: <input id="filtroDataAte" type="date" /></label>
+            <button type="submit">Buscar</button>
+            <button type="button" id="limparFiltros" class="secondary">Limpar</button>
+          </div>
         </form>
       </section>
 
