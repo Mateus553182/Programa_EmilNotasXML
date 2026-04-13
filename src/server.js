@@ -244,6 +244,72 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
 
+/* ---- Cadastro de novo usuário + empresa ---- */
+const uploadCadastro = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single('certificado');
+
+app.post('/api/cadastro', (req, res) => {
+  uploadCadastro(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: 'Erro no upload: ' + err.message });
+
+    try {
+      const {
+        nomeUsuario, cpf, email, usuario, senha,
+        nomeEmpresa, cnpj, endereco, cidade, estado, cep,
+        senhaCertificado,
+      } = req.body;
+
+      if (!nomeUsuario || !cpf || !email || !usuario || !senha) {
+        return res.status(400).json({ error: 'Preencha todos os campos do usuário.' });
+      }
+      if (!nomeEmpresa || !cnpj) {
+        return res.status(400).json({ error: 'Preencha os campos obrigatórios da empresa.' });
+      }
+
+      const registrosPath = path.join(__dirname, '..', 'storage', 'registros.json');
+      let registros = [];
+      try {
+        const raw = await fs.readFile(registrosPath, 'utf-8');
+        registros = JSON.parse(raw);
+      } catch { /* first time */ }
+
+      // Verificar duplicatas
+      if (registros.some((r) => r.usuario === usuario)) {
+        return res.status(409).json({ error: 'Usuário já existe.' });
+      }
+      if (registros.some((r) => r.cpf === cpf)) {
+        return res.status(409).json({ error: 'CPF já cadastrado.' });
+      }
+
+      const registro = {
+        id: uuidv4(),
+        nomeUsuario, cpf, email, usuario, senha,
+        nomeEmpresa, cnpj,
+        endereco: endereco || '', cidade: cidade || '', estado: estado || '', cep: cep || '',
+        certificado: req.file ? req.file.originalname : null,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Salvar certificado em disco se enviado
+      if (req.file) {
+        const certDir = path.join(__dirname, '..', 'storage', 'certificados');
+        await fs.mkdir(certDir, { recursive: true });
+        await fs.writeFile(path.join(certDir, `${registro.id}.pfx`), req.file.buffer);
+      }
+
+      registros.push(registro);
+      await fs.writeFile(registrosPath, JSON.stringify(registros, null, 2));
+
+      res.status(201).json({ ok: true, message: 'Cadastro realizado com sucesso!' });
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      res.status(500).json({ error: 'Erro interno ao processar cadastro.' });
+    }
+  });
+});
+
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });

@@ -25,26 +25,93 @@
     <main class="container">
       <section class="card cadastro-card">
         <h2>Cadastre-se</h2>
-        <p class="subtitle-auth">Preencha os dados abaixo para solicitar acesso ao sistema.</p>
+        <p class="subtitle-auth">Preencha os dados em 3 etapas para solicitar acesso ao sistema.</p>
 
-        <form id="cadastroForm" class="cadastro-form">
-          <label for="nomeEmpresa">Nome da empresa:</label>
-          <input id="nomeEmpresa" type="text" placeholder="Ex: Empresa ABC Ltda" required />
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="step active" data-step="1"><span class="step-number">1</span><span class="step-label">Usuário</span></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Empresa</span></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">Certificado</span></div>
+        </div>
 
-          <label for="cnpj">CNPJ:</label>
-          <input id="cnpj" type="text" placeholder="00.000.000/0000-00" required />
+        <form id="cadastroForm">
+          <!-- Passo 1: Dados do Usuário -->
+          <fieldset class="wizard-step" id="step1">
+            <legend>Dados do Usuário</legend>
+            <div class="form-grid">
+              <label for="nomeUsuario">Nome completo:</label>
+              <input id="nomeUsuario" type="text" placeholder="Seu nome completo" required />
 
-          <label for="responsavel">Nome do responsável:</label>
-          <input id="responsavel" type="text" placeholder="Nome completo" required />
+              <label for="cpf">CPF:</label>
+              <input id="cpf" type="text" placeholder="000.000.000-00" required maxlength="14" />
 
-          <label for="email">E-mail:</label>
-          <input id="email" type="email" placeholder="contato@empresa.com" required />
+              <label for="email">E-mail:</label>
+              <input id="email" type="email" placeholder="seu@email.com" required />
 
-          <label for="telefone">Telefone:</label>
-          <input id="telefone" type="tel" placeholder="(00) 00000-0000" required />
+              <label for="usuario">Usuário:</label>
+              <input id="usuario" type="text" placeholder="Nome de usuário para login" required />
 
-          <div class="cadastro-actions">
-            <button type="submit">Enviar cadastro</button>
+              <label for="senha">Senha:</label>
+              <input id="senha" type="password" placeholder="Mínimo 6 caracteres" required minlength="6" />
+
+              <label for="confirmarSenha">Confirmar senha:</label>
+              <input id="confirmarSenha" type="password" placeholder="Repita a senha" required minlength="6" />
+            </div>
+          </fieldset>
+
+          <!-- Passo 2: Dados da Empresa -->
+          <fieldset class="wizard-step hidden" id="step2">
+            <legend>Dados da Empresa</legend>
+            <div class="form-grid">
+              <label for="nomeEmpresa">Nome da empresa:</label>
+              <input id="nomeEmpresa" type="text" placeholder="Razão social" required />
+
+              <label for="cnpj">CNPJ:</label>
+              <input id="cnpj" type="text" placeholder="00.000.000/0000-00" required maxlength="18" />
+
+              <label for="endereco">Endereço:</label>
+              <input id="endereco" type="text" placeholder="Rua, número, bairro" required />
+
+              <label for="cidade">Cidade:</label>
+              <input id="cidade" type="text" placeholder="Cidade" required />
+
+              <label for="estado">Estado:</label>
+              <input id="estado" type="text" placeholder="UF" required maxlength="2" />
+
+              <label for="cep">CEP:</label>
+              <input id="cep" type="text" placeholder="00000-000" maxlength="9" />
+            </div>
+          </fieldset>
+
+          <!-- Passo 3: Certificado Digital -->
+          <fieldset class="wizard-step hidden" id="step3">
+            <legend>Certificado Digital</legend>
+            <div class="certificado-upload">
+              <p class="certificado-info">
+                Envie o certificado digital da empresa (arquivo <strong>.pfx</strong> ou <strong>.p12</strong>).
+                Ele será utilizado para recuperar automaticamente as notas fiscais emitidas em nome da empresa.
+              </p>
+              <div class="upload-area" id="uploadArea">
+                <span class="upload-icon">&#128274;</span>
+                <p>Arraste o arquivo aqui ou clique para selecionar</p>
+                <input id="certificadoFile" type="file" accept=".pfx,.p12" />
+              </div>
+              <p id="certificadoFileName" class="certificado-file-name"></p>
+
+              <div class="form-grid" style="margin-top: 1rem;">
+                <label for="senhaCertificado">Senha do certificado:</label>
+                <input id="senhaCertificado" type="password" placeholder="Senha do arquivo .pfx/.p12" />
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Navegação -->
+          <div class="wizard-nav">
+            <button type="button" id="btnVoltar" class="secondary" disabled>Voltar</button>
+            <button type="button" id="btnProximo">Próximo</button>
+            <button type="submit" id="btnConcluir" class="hidden">Concluir cadastro</button>
           </div>
         </form>
         <p id="cadastroMessage" class="message"></p>
@@ -52,5 +119,6 @@
     </main>
 
     <footer class="page-footer container">&copy; 2026 - Emil Informatica</footer>
+    <script src="/cadastro.js"></script>
   </body>
 </html>

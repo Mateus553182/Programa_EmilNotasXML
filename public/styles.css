@@ -382,17 +382,157 @@ td.actions button.delete {
   align-items: center;
 }
 
-.cadastro-form label {
+/* Stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 1.2rem 0 1.5rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.step-number {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background 300ms, color 300ms;
+}
+
+.step.active .step-number {
+  background: var(--action);
+  color: #fff;
+}
+
+.step.done .step-number {
+  background: #2e9e6a;
+  color: #fff;
+}
+
+.step-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.step.active .step-label {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.step-line {
+  flex: 1;
+  height: 3px;
+  min-width: 60px;
+  max-width: 120px;
+  background: var(--border);
+  margin: 0 0.5rem;
+  margin-bottom: 1.2rem;
+  border-radius: 2px;
+  transition: background 300ms;
+}
+
+.step-line.active {
+  background: var(--action);
+}
+
+/* Wizard steps */
+.wizard-step {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wizard-step legend {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 0.85rem 1rem;
+  align-items: center;
+}
+
+.form-grid label {
   font-size: 0.95rem;
   text-align: right;
 }
 
-.cadastro-actions {
-  grid-column: 1 / -1;
+/* Wizard nav */
+.wizard-nav {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+/* Upload area certificado */
+.certificado-info {
+  color: var(--muted);
+  font-size: 0.93rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 6px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 200ms, background 200ms;
+  position: relative;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+  border-color: var(--action);
+  background: rgba(21, 171, 200, 0.05);
+}
+
+.upload-area input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.upload-area p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.93rem;
+}
+
+.certificado-file-name {
   margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #2e9e6a;
+  font-weight: 600;
+  min-height: 1.2rem;
 }
 
 .acesso-page {
