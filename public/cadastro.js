@@ -1,4 +1,4 @@
-/* cadastro.js — Wizard de cadastro em 3 etapas */
+/* cadastro.js — Wizard de cadastro em 3 etapas (Empresa → Usuário → Certificado) */
 
 const steps = document.querySelectorAll('.wizard-step');
 const stepIndicators = document.querySelectorAll('.step');
@@ -8,9 +8,16 @@ const btnProximo = document.getElementById('btnProximo');
 const btnConcluir = document.getElementById('btnConcluir');
 const form = document.getElementById('cadastroForm');
 const message = document.getElementById('cadastroMessage');
+const codigoEmpresaEl = document.getElementById('codigoEmpresaGerado');
 
 let currentStep = 0;
+let codigoEmpresa = '';
 const totalSteps = steps.length;
+
+/* ---- Gerar código da empresa (numérico, 6 dígitos) ---- */
+function gerarCodigoEmpresa() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 /* ---- Navegação ---- */
 
@@ -37,8 +44,8 @@ function validateCurrentStep() {
     if (!input.reportValidity()) return false;
   }
 
-  // Validação extra: senhas iguais (passo 1)
-  if (currentStep === 0) {
+  // Validação extra: senhas iguais (passo 2 — Usuário)
+  if (currentStep === 1) {
     const senha = document.getElementById('senha');
     const confirmar = document.getElementById('confirmarSenha');
     if (senha.value !== confirmar.value) {
@@ -54,6 +61,13 @@ function validateCurrentStep() {
 
 btnProximo.addEventListener('click', () => {
   if (!validateCurrentStep()) return;
+
+  // Ao sair do passo 1 (Empresa), gerar código
+  if (currentStep === 0 && !codigoEmpresa) {
+    codigoEmpresa = gerarCodigoEmpresa();
+    codigoEmpresaEl.textContent = codigoEmpresa;
+  }
+
   if (currentStep < totalSteps - 1) {
     currentStep++;
     showStep(currentStep);
@@ -147,18 +161,21 @@ form.addEventListener('submit', async (e) => {
   message.textContent = '';
 
   const formData = new FormData();
-  formData.append('nomeUsuario', document.getElementById('nomeUsuario').value.trim());
-  formData.append('cpf', document.getElementById('cpf').value.trim());
-  formData.append('email', document.getElementById('email').value.trim());
-  formData.append('usuario', document.getElementById('usuario').value.trim());
-  formData.append('senha', document.getElementById('senha').value);
+  // Empresa
+  formData.append('codigoEmpresa', codigoEmpresa);
   formData.append('nomeEmpresa', document.getElementById('nomeEmpresa').value.trim());
   formData.append('cnpj', document.getElementById('cnpj').value.trim());
   formData.append('endereco', document.getElementById('endereco').value.trim());
   formData.append('cidade', document.getElementById('cidade').value.trim());
   formData.append('estado', document.getElementById('estado').value.trim().toUpperCase());
   formData.append('cep', document.getElementById('cep').value.trim());
-
+  // Usuário
+  formData.append('nomeUsuario', document.getElementById('nomeUsuario').value.trim());
+  formData.append('cpf', document.getElementById('cpf').value.trim());
+  formData.append('email', document.getElementById('email').value.trim());
+  formData.append('usuario', document.getElementById('usuario').value.trim());
+  formData.append('senha', document.getElementById('senha').value);
+  // Certificado
   const certFile = document.getElementById('certificadoFile').files[0];
   if (certFile) {
     formData.append('certificado', certFile);
@@ -170,8 +187,8 @@ form.addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erro ao cadastrar');
     message.style.color = 'green';
-    message.textContent = 'Cadastro realizado com sucesso! Redirecionando...';
-    setTimeout(() => (window.location.href = '/acesso?forceLogin=1'), 2000);
+    message.textContent = `Cadastro realizado! Código da empresa: ${codigoEmpresa}. Redirecionando...`;
+    setTimeout(() => (window.location.href = '/acesso?forceLogin=1'), 3000);
   } catch (err) {
     message.style.color = 'var(--danger)';
     message.textContent = err.message;

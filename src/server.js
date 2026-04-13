@@ -256,16 +256,16 @@ app.post('/api/cadastro', (req, res) => {
 
     try {
       const {
+        codigoEmpresa, nomeEmpresa, cnpj, endereco, cidade, estado, cep,
         nomeUsuario, cpf, email, usuario, senha,
-        nomeEmpresa, cnpj, endereco, cidade, estado, cep,
         senhaCertificado,
       } = req.body;
 
+      if (!codigoEmpresa || !nomeEmpresa || !cnpj) {
+        return res.status(400).json({ error: 'Preencha os campos obrigatórios da empresa.' });
+      }
       if (!nomeUsuario || !cpf || !email || !usuario || !senha) {
         return res.status(400).json({ error: 'Preencha todos os campos do usuário.' });
-      }
-      if (!nomeEmpresa || !cnpj) {
-        return res.status(400).json({ error: 'Preencha os campos obrigatórios da empresa.' });
       }
 
       const registrosPath = path.join(__dirname, '..', 'storage', 'registros.json');
@@ -282,12 +282,16 @@ app.post('/api/cadastro', (req, res) => {
       if (registros.some((r) => r.cpf === cpf)) {
         return res.status(409).json({ error: 'CPF já cadastrado.' });
       }
+      if (registros.some((r) => r.cnpj === cnpj)) {
+        return res.status(409).json({ error: 'CNPJ já cadastrado.' });
+      }
 
       const registro = {
         id: uuidv4(),
-        nomeUsuario, cpf, email, usuario, senha,
+        codigoEmpresa,
         nomeEmpresa, cnpj,
         endereco: endereco || '', cidade: cidade || '', estado: estado || '', cep: cep || '',
+        nomeUsuario, cpf, email, usuario, senha,
         certificado: req.file ? req.file.originalname : null,
         createdAt: new Date().toISOString(),
       };
@@ -302,7 +306,7 @@ app.post('/api/cadastro', (req, res) => {
       registros.push(registro);
       await fs.writeFile(registrosPath, JSON.stringify(registros, null, 2));
 
-      res.status(201).json({ ok: true, message: 'Cadastro realizado com sucesso!' });
+      res.status(201).json({ ok: true, codigoEmpresa, message: 'Cadastro realizado com sucesso!' });
     } catch (error) {
       console.error('Erro no cadastro:', error);
       res.status(500).json({ error: 'Erro interno ao processar cadastro.' });
