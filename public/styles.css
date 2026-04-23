@@ -189,14 +189,41 @@ h2 {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1rem;
-  box-shadow: 0 8px 18px rgba(32, 42, 61, 0.04);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(32, 42, 61, 0.05);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+
+.info-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(21, 171, 200, 0.12), rgba(27, 192, 225, 0));
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
 }
 
 .info-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(21, 171, 200, 0.45);
-  box-shadow: 0 16px 28px rgba(32, 42, 61, 0.1);
+  transform: translateY(-10px) scale(1.02);
+  border-color: rgba(21, 171, 200, 0.7);
+  background: linear-gradient(180deg, #ffffff 0, #f4fbff 100%);
+  box-shadow: 0 24px 40px rgba(32, 42, 61, 0.2);
+}
+
+.info-card:hover::after {
+  opacity: 1;
+}
+
+.info-card h2,
+.info-card .info-icon {
+  transition: color 220ms ease;
+}
+
+.info-card:hover h2,
+.info-card:hover .info-icon {
+  color: #0b71eb;
 }
 
 .info-card h2 {
