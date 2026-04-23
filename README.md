@@ -39,6 +39,38 @@ npm run dev
 http://localhost:3310
 ```
 
+## Verificacao de e-mail no cadastro
+
+O cadastro usa envio real de e-mail para validar o usuario master.
+
+### SMTP real (recomendado)
+
+Defina estas variaveis de ambiente antes de iniciar a aplicacao:
+
+- `SMTP_HOST`: host do provedor SMTP
+- `SMTP_PORT`: porta SMTP (ex.: `587`)
+- `SMTP_SECURE`: `true` para TLS direto (porta 465), senao `false`
+- `SMTP_USER`: usuario da conta SMTP
+- `SMTP_PASS`: senha da conta SMTP
+- `SMTP_FROM` (opcional): remetente exibido no e-mail
+- `EMAIL_CODE_TTL_MS` (opcional): expiracao do codigo em ms (padrao: `600000`)
+
+Exemplo PowerShell:
+
+```powershell
+$env:SMTP_HOST="smtp.seuprovedor.com"
+$env:SMTP_PORT="587"
+$env:SMTP_SECURE="false"
+$env:SMTP_USER="no-reply@seudominio.com"
+$env:SMTP_PASS="sua-senha-ou-app-password"
+$env:SMTP_FROM="Emil NotasXML <no-reply@seudominio.com>"
+npm start
+```
+
+### Modo teste automatico
+
+Se SMTP nao estiver configurado, o sistema usa Ethereal Email e retorna um `previewUrl` no endpoint de envio para voce visualizar o e-mail e copiar o codigo.
+
 ### Rotas de tela
 
 - Home institucional: `/login`

@@ -464,15 +464,25 @@ td.actions button.delete {
 
 /* Cadastro page */
 .cadastro-card {
-  max-width: 600px;
+  width: min(980px, 100%);
   margin: 0 auto;
 }
 
-.cadastro-form {
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 0.85rem 1rem;
-  align-items: center;
+.cadastro-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.cadastro-summary-pill {
+  max-width: 320px;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  background: rgba(21, 171, 200, 0.12);
+  color: #0d6c7d;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* Stepper */
@@ -551,15 +561,21 @@ td.actions button.delete {
 }
 
 .wizard-step legend {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.18rem;
+  font-weight: 700;
   margin-bottom: 1rem;
   color: var(--text);
 }
 
+.step-hint {
+  margin: 0 0 1.15rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .form-grid {
   display: grid;
-  grid-template-columns: 160px 1fr;
+  grid-template-columns: 210px 1fr;
   gap: 0.85rem 1rem;
   align-items: center;
 }
@@ -567,6 +583,92 @@ td.actions button.delete {
 .form-grid label {
   font-size: 0.95rem;
   text-align: right;
+}
+
+.inline-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.inline-actions button {
+  width: auto;
+  white-space: nowrap;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.field-hint.success {
+  color: #2e9e6a;
+  font-weight: 600;
+}
+
+.user-type-toggle,
+.package-grid,
+.empresa-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.package-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.user-type-card,
+.package-card,
+.empresa-mode {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0, #f8fbfe 100%);
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(32, 42, 61, 0.05);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.user-type-card input,
+.package-card input,
+.empresa-mode input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.user-type-card.active,
+.package-card.active,
+.empresa-mode.active {
+  border-color: var(--action);
+  box-shadow: 0 12px 24px rgba(21, 171, 200, 0.12);
+  transform: translateY(-2px);
+}
+
+.user-type-title,
+.package-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.package-card strong {
+  font-size: 1.5rem;
+  color: #154875;
+}
+
+.user-type-card small,
+.package-card small,
+.empresa-mode small {
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 /* Wizard nav */
@@ -581,10 +683,14 @@ td.actions button.delete {
 .codigo-empresa-box {
   background: var(--bg-soft);
   border: 1px solid var(--action);
-  border-radius: 5px;
+  border-radius: 10px;
   padding: 0.85rem 1rem;
   margin-bottom: 1.2rem;
   text-align: center;
+}
+
+.codigo-empresa-box.compact {
+  margin-bottom: 1.25rem;
 }
 
 .codigo-empresa-box strong {
@@ -609,9 +715,13 @@ td.actions button.delete {
   margin: 0 0 1rem;
 }
 
+.cert-grid {
+  margin-top: 1rem;
+}
+
 .upload-area {
   border: 2px dashed var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 2rem;
   text-align: center;
   cursor: pointer;
@@ -650,6 +760,57 @@ td.actions button.delete {
   color: #2e9e6a;
   font-weight: 600;
   min-height: 1.2rem;
+}
+
+.empresa-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.empresa-empty {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empresa-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(32, 42, 61, 0.06);
+}
+
+.empresa-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.empresa-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.empresa-subtitle {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.company-grid {
+  grid-template-columns: 150px 1fr;
+}
+
+.empresa-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 .acesso-page {
@@ -750,6 +911,16 @@ td.actions button.delete {
     margin-top: 0.8rem;
   }
 
+  .cadastro-hero,
+  .empresa-card-header {
+    flex-direction: column;
+  }
+
+  .cadastro-summary-pill {
+    max-width: none;
+    width: 100%;
+  }
+
   .topbar-inner {
     height: auto;
     padding: 0.55rem 0;
@@ -799,6 +970,42 @@ td.actions button.delete {
 
   .info-card h2 {
     font-size: 1.8rem;
+  }
+
+  .stepper {
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 0.35rem;
+  }
+
+  .step-line {
+    min-width: 40px;
+  }
+
+  .user-type-toggle,
+  .package-grid,
+  .empresa-mode-grid,
+  .form-grid,
+  .company-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid label {
+    text-align: left;
+  }
+
+  .wizard-nav,
+  .empresa-actions,
+  .login-modal-actions {
+    justify-content: stretch;
+  }
+
+  .wizard-nav {
+    flex-direction: column;
   }
 
   input,

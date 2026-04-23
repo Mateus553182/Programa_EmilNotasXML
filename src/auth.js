@@ -11,30 +11,100 @@ const defaultCompanies = {
       id: 'empresa-demo-1',
       code: 'emil-demo',
       name: 'Empresa Demo Emil',
-      users: [
-        {
-          username: 'admin',
-          password: '123456',
-          active: true,
-        },
-      ],
+      cnpj: '',
+      userIds: ['user-demo-1'],
+      masterUserId: 'user-demo-1',
       active: true,
     },
     {
       id: 'empresa-teste-1',
       code: 'xml-teste',
       name: 'Empresa Teste XML',
-      users: [
-        {
-          username: 'teste',
-          password: 'teste123',
-          active: true,
-        },
-      ],
+      cnpj: '',
+      userIds: ['user-teste-1'],
+      masterUserId: 'user-teste-1',
+      active: true,
+    },
+  ],
+  users: [
+    {
+      id: 'user-demo-1',
+      name: 'Administrador Demo',
+      username: 'admin',
+      email: 'admin@emil.demo',
+      password: '123456',
+      accessLevel: 'master',
+      companyIds: ['empresa-demo-1'],
+      active: true,
+    },
+    {
+      id: 'user-teste-1',
+      name: 'Usuario Teste',
+      username: 'teste',
+      email: 'teste@xml.demo',
+      password: 'teste123',
+      accessLevel: 'master',
+      companyIds: ['empresa-teste-1'],
       active: true,
     },
   ],
 };
+
+function createUserId(companyId, index) {
+  return `${companyId}-user-${index + 1}`;
+}
+
+function normalizeRegistry(parsed) {
+  const companies = Array.isArray(parsed && parsed.companies) ? parsed.companies : [];
+  const explicitUsers = Array.isArray(parsed && parsed.users) ? parsed.users : null;
+
+  if (explicitUsers) {
+    return {
+      companies: companies.map((company) => ({
+        ...company,
+        userIds: Array.isArray(company.userIds) ? company.userIds : [],
+      })),
+      users: explicitUsers.map((user) => ({
+        active: user.active !== false,
+        companyIds: Array.isArray(user.companyIds) ? user.companyIds : [],
+        ...user,
+      })),
+    };
+  }
+
+  const migratedUsers = [];
+  const migratedCompanies = companies.map((company) => {
+    const legacyUsers = Array.isArray(company.users) ? company.users : [];
+    const userIds = legacyUsers.map((user, index) => {
+      const id = createUserId(company.id || `company-${index + 1}`, index);
+      migratedUsers.push({
+        id,
+        name: user.name || user.username || `Usuario ${index + 1}`,
+        username: user.username || '',
+        email: user.email || '',
+        password: user.password || '',
+        accessLevel: index === 0 ? 'master' : 'common',
+        companyIds: [company.id],
+        active: user.active !== false,
+      });
+      return id;
+    });
+
+    const { users, ...rest } = company;
+    return {
+      ...rest,
+      cnpj: company.cnpj || '',
+      userIds,
+      masterUserId: company.masterUserId || userIds[0] || null,
+      active: company.active !== false,
+    };
+  });
+
+  return {
+    companies: migratedCompanies,
+    users: migratedUsers,
+  };
+}
 
 async function ensureCompanies() {
   try {
@@ -44,11 +114,21 @@ async function ensureCompanies() {
   }
 }
 
-async function readCompanies() {
+async function readCompanyRegistry() {
   await ensureCompanies();
   const content = await fs.readFile(COMPANIES_PATH, 'utf-8');
   const parsed = JSON.parse(content);
-  return parsed.companies || [];
+  const normalized = normalizeRegistry(parsed);
+
+  if (!Array.isArray(parsed.users)) {
+    await fs.writeFile(COMPANIES_PATH, JSON.stringify(normalized, null, 2), 'utf-8');
+  }
+
+  return normalized;
+}
+
+async function writeCompanyRegistry(registry) {
+  await fs.writeFile(COMPANIES_PATH, JSON.stringify(registry, null, 2), 'utf-8');
 }
 
 function createToken() {
@@ -56,7 +136,7 @@ function createToken() {
 }
 
 async function loginCompany(companyCode, username, password) {
-  const companies = await readCompanies();
+  const { companies, users } = await readCompanyRegistry();
   const normalizedCode = String(companyCode || '').trim().toLowerCase();
   const normalizedUsername = String(username || '').trim().toLowerCase();
 
@@ -68,20 +148,20 @@ async function loginCompany(companyCode, username, password) {
     return null;
   }
 
-  const users = Array.isArray(company.users)
-    ? company.users
-    : [
-        {
-          username: 'admin',
-          password: company.password || '',
-          active: true,
-        },
-      ];
+  const companyUserIds = Array.isArray(company.userIds) ? company.userIds : [];
+  const companyUsers = companyUserIds.length
+    ? users.filter((item) => companyUserIds.includes(item.id))
+    : Array.isArray(company.users)
+      ? company.users
+      : [];
 
-  const user = users.find(
+  const user = companyUsers.find(
     (item) =>
       item.active !== false &&
-      String(item.username || '').trim().toLowerCase() === normalizedUsername
+      [item.username, item.email, item.login]
+        .filter(Boolean)
+        .map((value) => String(value).trim().toLowerCase())
+        .includes(normalizedUsername)
   );
 
   if (!user || String(user.password) !== String(password || '')) {
@@ -94,7 +174,10 @@ async function loginCompany(companyCode, username, password) {
     companyId: company.id,
     companyCode: company.code,
     companyName: company.name,
-    username: user.username,
+    userId: user.id || null,
+    username: user.username || user.email || user.name,
+    email: user.email || '',
+    accessLevel: user.accessLevel || 'common',
     createdAt: new Date().toISOString(),
   };
 
@@ -114,6 +197,8 @@ function logoutSession(token) {
 
 module.exports = {
   ensureCompanies,
+  readCompanyRegistry,
+  writeCompanyRegistry,
   loginCompany,
   getSessionFromToken,
   logoutSession,

@@ -24,51 +24,35 @@
 
     <main class="container">
       <section class="card cadastro-card">
-        <h2>Cadastre-se</h2>
-        <p class="subtitle-auth">Preencha os dados em 3 etapas para solicitar acesso ao sistema.</p>
+        <div class="cadastro-hero">
+          <div>
+            <h2>Cadastre sua operação</h2>
+            <p class="subtitle-auth">Novo fluxo em 4 etapas para estruturar usuário, plano, certificado e múltiplas empresas.</p>
+          </div>
+          <div class="cadastro-summary-pill">Arquitetura N:N pronta para Master e usuários comuns</div>
+        </div>
 
-        <!-- Stepper -->
         <div class="stepper">
-          <div class="step active" data-step="1"><span class="step-number">1</span><span class="step-label">Empresa</span></div>
+          <div class="step active" data-step="1"><span class="step-number">1</span><span class="step-label">Usuário</span></div>
           <div class="step-line"></div>
-          <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Usuário</span></div>
+          <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Pacote</span></div>
           <div class="step-line"></div>
           <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">Certificado</span></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label">Empresas</span></div>
         </div>
 
         <form id="cadastroForm">
-          <!-- Passo 1: Dados da Empresa -->
           <fieldset class="wizard-step" id="step1">
-            <legend>Dados da Empresa</legend>
-            <div class="form-grid">
-              <label for="nomeEmpresa">Nome da empresa:</label>
-              <input id="nomeEmpresa" type="text" placeholder="Razão social" required />
+            <legend>Dados do usuário</legend>
+            <p class="step-hint">Este cadastro cria um usuário <strong>Master</strong>, responsável por gerenciar os usuários abaixo dele para as empresas cadastradas.</p>
 
-              <label for="cnpj">CNPJ:</label>
-              <input id="cnpj" type="text" placeholder="00.000.000/0000-00" required maxlength="18" />
-
-              <label for="endereco">Endereço:</label>
-              <input id="endereco" type="text" placeholder="Rua, número, bairro" required />
-
-              <label for="cidade">Cidade:</label>
-              <input id="cidade" type="text" placeholder="Cidade" required />
-
-              <label for="estado">Estado:</label>
-              <input id="estado" type="text" placeholder="UF" required maxlength="2" />
-
-              <label for="cep">CEP:</label>
-              <input id="cep" type="text" placeholder="00000-000" maxlength="9" />
+            <div class="codigo-empresa-box compact">
+              <span>Perfil do usuário:</span>
+              <strong>Master</strong>
+              <small>Será criado 1 usuário master por CNPJ no cadastro inicial.</small>
             </div>
-          </fieldset>
 
-          <!-- Passo 2: Dados do Usuário -->
-          <fieldset class="wizard-step hidden" id="step2">
-            <legend>Dados do Usuário</legend>
-            <div class="codigo-empresa-box">
-              <span>Código da empresa:</span>
-              <strong id="codigoEmpresaGerado">—</strong>
-              <small>Guarde este código. Outros usuários podem usá-lo para se vincular à empresa.</small>
-            </div>
             <div class="form-grid">
               <label for="nomeUsuario">Nome completo:</label>
               <input id="nomeUsuario" type="text" placeholder="Seu nome completo" required />
@@ -76,11 +60,20 @@
               <label for="cpf">CPF:</label>
               <input id="cpf" type="text" placeholder="000.000.000-00" required maxlength="14" />
 
-              <label for="email">E-mail:</label>
+              <label for="cargo">Responsabilidade / cargo:</label>
+              <input id="cargo" type="text" placeholder="Ex.: Financeiro, Contador, Diretor" required />
+
+              <label for="email">E-mail (login):</label>
               <input id="email" type="email" placeholder="seu@email.com" required />
 
-              <label for="usuario">Usuário:</label>
-              <input id="usuario" type="text" placeholder="Nome de usuário para login" required />
+              <label for="emailCode">Código de verificação:</label>
+              <div class="inline-actions">
+                <input id="emailCode" type="text" placeholder="Informe o código recebido por e-mail" required maxlength="6" />
+                <button type="button" id="btnEnviarCodigo" class="secondary">Enviar código</button>
+              </div>
+
+              <label></label>
+              <p id="emailCodeHint" class="field-hint">Solicite o código para validar o e-mail antes de prosseguir.</p>
 
               <label for="senha">Senha:</label>
               <input id="senha" type="password" placeholder="Mínimo 6 caracteres" required minlength="6" />
@@ -90,13 +83,47 @@
             </div>
           </fieldset>
 
-          <!-- Passo 3: Certificado Digital -->
+          <fieldset class="wizard-step hidden" id="step2">
+            <legend>Escolha o pacote</legend>
+            <p class="step-hint">O pacote define quantas empresas podem ser vinculadas no cadastro inicial.</p>
+
+            <div class="package-grid" id="packageGrid">
+              <label class="package-card active" data-package-id="essencial">
+                <input type="radio" name="packageId" value="essencial" checked />
+                <span class="package-name">Essencial</span>
+                <strong>1 empresa</strong>
+                <small>Ideal para operação enxuta com um gestor principal.</small>
+              </label>
+
+              <label class="package-card" data-package-id="profissional">
+                <input type="radio" name="packageId" value="profissional" />
+                <span class="package-name">Profissional</span>
+                <strong>3 empresas</strong>
+                <small>Para quem precisa operar matriz e filiais no mesmo acesso.</small>
+              </label>
+
+              <label class="package-card" data-package-id="corporativo">
+                <input type="radio" name="packageId" value="corporativo" />
+                <span class="package-name">Corporativo</span>
+                <strong>10 empresas</strong>
+                <small>Estrutura ampla com mais governança e expansão de usuários.</small>
+              </label>
+            </div>
+
+            <div class="codigo-empresa-box compact">
+              <span>Pacote selecionado:</span>
+              <strong id="selectedPackageLabel">Essencial</strong>
+              <small id="selectedPackageHint">Limite inicial de 1 empresa vinculada neste cadastro.</small>
+            </div>
+          </fieldset>
+
           <fieldset class="wizard-step hidden" id="step3">
-            <legend>Certificado Digital</legend>
+            <legend>Certificado digital</legend>
+            <p class="step-hint">Ao enviar o certificado, tentamos extrair automaticamente o CEP para preencher os dados de endereço das empresas.</p>
+
             <div class="certificado-upload">
               <p class="certificado-info">
-                Envie o certificado digital da empresa (arquivo <strong>.pfx</strong> ou <strong>.p12</strong>).
-                Ele será utilizado para recuperar automaticamente as notas fiscais emitidas em nome da empresa.
+                Envie o certificado digital em <strong>.pfx</strong> ou <strong>.p12</strong>. Se você estiver apenas vinculando empresas já existentes, este envio pode ser feito depois pelo usuário master.
               </p>
               <div class="upload-area" id="uploadArea">
                 <span class="upload-icon">&#128274;</span>
@@ -105,14 +132,37 @@
               </div>
               <p id="certificadoFileName" class="certificado-file-name"></p>
 
-              <div class="form-grid" style="margin-top: 1rem;">
+              <div class="form-grid cert-grid">
                 <label for="senhaCertificado">Senha do certificado:</label>
                 <input id="senhaCertificado" type="password" placeholder="Senha do arquivo .pfx/.p12" />
+
+                <label for="cepExtraidoCertificado">CEP extraído do certificado:</label>
+                <input id="cepExtraidoCertificado" type="text" placeholder="Não identificado" readonly />
+
+                <label for="certificadoValidade">Validade do certificado:</label>
+                <input id="certificadoValidade" type="date" />
               </div>
             </div>
           </fieldset>
 
-          <!-- Navegação -->
+          <fieldset class="wizard-step hidden" id="step4">
+            <legend>Empresas vinculadas</legend>
+            <p class="step-hint">Cadastre as empresas do usuário master. Cada CNPJ terá apenas um master responsável.</p>
+
+            <div class="codigo-empresa-box compact companies-box">
+              <span>Capacidade atual do pacote:</span>
+              <strong id="companiesPlanHint">1 empresa</strong>
+              <small id="companiesModeHint">Adicione as empresas que este usuário master vai administrar.</small>
+            </div>
+
+            <div id="empresaList" class="empresa-list"></div>
+            <p id="empresaEmpty" class="empresa-empty">Nenhuma empresa adicionada ainda.</p>
+
+            <div class="empresa-actions">
+              <button type="button" id="btnAdicionarEmpresa">Adicionar empresa</button>
+            </div>
+          </fieldset>
+
           <div class="wizard-nav">
             <button type="button" id="btnVoltar" class="secondary" disabled>Voltar</button>
             <button type="button" id="btnProximo">Próximo</button>
@@ -120,6 +170,38 @@
           </div>
         </form>
         <p id="cadastroMessage" class="message"></p>
+
+        <template id="empresaTemplate">
+          <article class="empresa-card">
+            <div class="empresa-card-header">
+              <div>
+                <h3 class="empresa-title">Empresa</h3>
+                <p class="empresa-subtitle">Dados da empresa que ficará sob gestão deste usuário master.</p>
+              </div>
+              <button type="button" class="secondary empresa-remove">Remover</button>
+            </div>
+
+            <div class="form-grid company-grid">
+              <label>Nome da empresa:</label>
+              <input data-field="nomeEmpresa" type="text" placeholder="Razão social" />
+
+              <label>CNPJ:</label>
+              <input data-field="cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18" />
+
+              <label>CEP:</label>
+              <input data-field="cep" type="text" placeholder="00000-000" maxlength="9" />
+
+              <label>Endereço:</label>
+              <input data-field="endereco" type="text" placeholder="Rua, número, bairro" />
+
+              <label>Cidade:</label>
+              <input data-field="cidade" type="text" placeholder="Cidade" />
+
+              <label>Estado:</label>
+              <input data-field="estado" type="text" placeholder="UF" maxlength="2" />
+            </div>
+          </article>
+        </template>
       </section>
     </main>
 

@@ -3,6 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs/promises');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 const {
@@ -14,14 +15,19 @@ const {
 } = require('./storage');
 const {
   ensureCompanies,
+  readCompanyRegistry,
+  writeCompanyRegistry,
   loginCompany,
   getSessionFromToken,
   logoutSession,
 } = require('./auth');
 const { parseNfeMetadata } = require('./xml-parser');
+const { sendVerificationEmail } = require('./email-service');
 
 const app = express();
 const PORT = process.env.PORT || 3310;
+const EMAIL_CODE_TTL_MS = Number(process.env.EMAIL_CODE_TTL_MS || 10 * 60 * 1000);
+const emailVerificationStore = new Map();
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -134,6 +140,12 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
       code: req.auth.companyCode,
       name: req.auth.companyName,
     },
+    user: {
+      id: req.auth.userId,
+      username: req.auth.username,
+      email: req.auth.email,
+      accessLevel: req.auth.accessLevel,
+    },
   });
 });
 
@@ -245,10 +257,173 @@ app.get('/', (req, res) => {
 });
 
 /* ---- Cadastro de novo usuário + empresa ---- */
+const PACKAGE_OPTIONS = {
+  essencial: {
+    id: 'essencial',
+    label: 'Essencial',
+    companyLimit: 1,
+    userLimit: 2,
+  },
+  profissional: {
+    id: 'profissional',
+    label: 'Profissional',
+    companyLimit: 3,
+    userLimit: 8,
+  },
+  corporativo: {
+    id: 'corporativo',
+    label: 'Corporativo',
+    companyLimit: 10,
+    userLimit: 25,
+  },
+};
+
+function normalizeDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function generateCompanyCode(companies) {
+  const existingCodes = new Set(companies.map((company) => String(company.code || '')));
+  let code = '';
+
+  do {
+    code = String(Math.floor(100000 + Math.random() * 900000));
+  } while (existingCodes.has(code));
+
+  return code;
+}
+
+function parseCompaniesData(rawValue) {
+  if (!rawValue) return [];
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function createEmailVerificationCode() {
+  return String(100000 + crypto.randomInt(900000));
+}
+
+function readEmailVerification(email) {
+  const key = String(email || '').trim().toLowerCase();
+  if (!key) return null;
+
+  const entry = emailVerificationStore.get(key);
+  if (!entry) return null;
+
+  if (Date.now() > entry.expiresAt) {
+    emailVerificationStore.delete(key);
+    return null;
+  }
+
+  return entry;
+}
+
+function saveEmailVerification(email, code) {
+  const key = String(email || '').trim().toLowerCase();
+  const now = Date.now();
+  const entry = {
+    email: key,
+    code,
+    createdAt: now,
+    expiresAt: now + EMAIL_CODE_TTL_MS,
+    verifiedAt: null,
+  };
+
+  emailVerificationStore.set(key, entry);
+  return entry;
+}
+
+function mockAddressFromCertificate(fileName) {
+  const key = String(fileName || '').toLowerCase();
+  if (key.includes('sp')) {
+    return { cep: '01310-100', street: 'Avenida Paulista', city: 'Sao Paulo', state: 'SP' };
+  }
+  if (key.includes('rj')) {
+    return { cep: '20040-002', street: 'Rua Primeiro de Marco', city: 'Rio de Janeiro', state: 'RJ' };
+  }
+
+  return { cep: '30140-071', street: 'Avenida Afonso Pena', city: 'Belo Horizonte', state: 'MG' };
+}
+
 const uploadCadastro = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single('certificado');
+
+app.post('/api/cadastro/email/send-code', async (req, res) => {
+  const email = String((req.body && req.body.email) || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Informe um e-mail valido para verificacao.' });
+  }
+
+  try {
+    const code = createEmailVerificationCode();
+    const verification = saveEmailVerification(email, code);
+    const result = await sendVerificationEmail({
+      to: email,
+      code,
+      expiresInMinutes: Math.max(1, Math.round(EMAIL_CODE_TTL_MS / 60000)),
+    });
+
+    const response = {
+      ok: true,
+      message: `Codigo de verificacao enviado para ${email}.`,
+      expiresAt: new Date(verification.expiresAt).toISOString(),
+    };
+
+    if (result.mode === 'ethereal' && result.previewUrl) {
+      response.previewUrl = result.previewUrl;
+      response.message += ' Ambiente de teste detectado: abra o link de preview para visualizar o e-mail.';
+    }
+
+    return res.json(response);
+  } catch (error) {
+    console.error('Falha ao enviar codigo de verificacao:', error);
+    return res.status(500).json({ error: 'Nao foi possivel enviar o codigo de verificacao por e-mail.' });
+  }
+});
+
+app.post('/api/cadastro/email/verify-code', async (req, res) => {
+  const email = String((req.body && req.body.email) || '').trim().toLowerCase();
+  const code = String((req.body && req.body.code) || '').trim();
+
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Informe e-mail e codigo para validacao.' });
+  }
+
+  const verification = readEmailVerification(email);
+  if (!verification) {
+    return res.status(400).json({ error: 'Codigo expirado ou nao encontrado. Solicite um novo codigo.' });
+  }
+
+  if (verification.code !== code) {
+    return res.status(400).json({ error: 'Codigo de verificacao invalido.' });
+  }
+
+  verification.verifiedAt = Date.now();
+  emailVerificationStore.set(email, verification);
+
+  return res.json({ ok: true, message: 'E-mail verificado com sucesso.' });
+});
+
+app.post('/api/cadastro/certificado/address-preview', (req, res) => {
+  uploadCadastro(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: 'Erro no upload: ' + err.message });
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Envie um certificado para extrair os dados de endereco.' });
+    }
+
+    // Placeholder for real parsing from certificate metadata.
+    const preview = mockAddressFromCertificate(req.file.originalname);
+    return res.json(preview);
+  });
+});
 
 app.post('/api/cadastro', (req, res) => {
   uploadCadastro(req, res, async (err) => {
@@ -256,57 +431,172 @@ app.post('/api/cadastro', (req, res) => {
 
     try {
       const {
-        codigoEmpresa, nomeEmpresa, cnpj, endereco, cidade, estado, cep,
-        nomeUsuario, cpf, email, usuario, senha,
+        accessLevel,
+        packageId,
+        nomeUsuario,
+        cpf,
+        cargo,
+        email,
+        emailCode,
+        senha,
         senhaCertificado,
+        certificadoValidade,
+        extractedCep,
+        companiesData,
       } = req.body;
 
-      if (!codigoEmpresa || !nomeEmpresa || !cnpj) {
-        return res.status(400).json({ error: 'Preencha os campos obrigatórios da empresa.' });
-      }
-      if (!nomeUsuario || !cpf || !email || !usuario || !senha) {
-        return res.status(400).json({ error: 'Preencha todos os campos do usuário.' });
+      const selectedPackage = PACKAGE_OPTIONS[packageId];
+      const companyEntries = parseCompaniesData(companiesData);
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+      const normalizedCpf = normalizeDigits(cpf);
+      const userAccessLevel = 'master';
+
+      if (!nomeUsuario || !normalizedCpf || !cargo || !normalizedEmail || !senha) {
+        return res.status(400).json({ error: 'Preencha todos os campos obrigatorios do usuario.' });
       }
 
-      const registrosPath = path.join(__dirname, '..', 'storage', 'registros.json');
-      let registros = [];
-      try {
-        const raw = await fs.readFile(registrosPath, 'utf-8');
-        registros = JSON.parse(raw);
-      } catch { /* first time */ }
-
-      // Verificar duplicatas
-      if (registros.some((r) => r.usuario === usuario)) {
-        return res.status(409).json({ error: 'Usuário já existe.' });
-      }
-      if (registros.some((r) => r.cpf === cpf)) {
-        return res.status(409).json({ error: 'CPF já cadastrado.' });
-      }
-      if (registros.some((r) => r.cnpj === cnpj)) {
-        return res.status(409).json({ error: 'CNPJ já cadastrado.' });
+      if (!selectedPackage) {
+        return res.status(400).json({ error: 'Selecione um pacote valido.' });
       }
 
-      const registro = {
-        id: uuidv4(),
-        codigoEmpresa,
-        nomeEmpresa, cnpj,
-        endereco: endereco || '', cidade: cidade || '', estado: estado || '', cep: cep || '',
-        nomeUsuario, cpf, email, usuario, senha,
-        certificado: req.file ? req.file.originalname : null,
-        createdAt: new Date().toISOString(),
-      };
+      const verification = readEmailVerification(normalizedEmail);
+      if (!verification) {
+        return res.status(400).json({ error: 'Codigo de verificacao expirado ou ausente. Solicite novamente.' });
+      }
 
-      // Salvar certificado em disco se enviado
+      if (verification.code !== String(emailCode || '').trim()) {
+        return res.status(400).json({ error: 'Codigo de verificacao de e-mail invalido.' });
+      }
+
+      if (!verification.verifiedAt) {
+        return res.status(400).json({ error: 'Valide o codigo de e-mail antes de concluir o cadastro.' });
+      }
+
+      if (!companyEntries.length) {
+        return res.status(400).json({ error: 'Adicione pelo menos uma empresa ao cadastro.' });
+      }
+
+      if (companyEntries.length > selectedPackage.companyLimit) {
+        return res.status(400).json({ error: 'A quantidade de empresas excede o limite do pacote selecionado.' });
+      }
+
+      const registry = await readCompanyRegistry();
+
+      if (registry.users.some((user) => String(user.email || '').trim().toLowerCase() === normalizedEmail)) {
+        return res.status(409).json({ error: 'E-mail ja cadastrado.' });
+      }
+
+      if (registry.users.some((user) => normalizeDigits(user.cpf) === normalizedCpf)) {
+        return res.status(409).json({ error: 'CPF ja cadastrado.' });
+      }
+
+      const userId = uuidv4();
+      const now = new Date().toISOString();
+      const companyIds = [];
+      const generatedCodes = [];
+      const linkedCompanies = [];
+      const newCompanies = [];
+      let certStorageName = null;
+      let managedBy = null;
+
       if (req.file) {
         const certDir = path.join(__dirname, '..', 'storage', 'certificados');
         await fs.mkdir(certDir, { recursive: true });
-        await fs.writeFile(path.join(certDir, `${registro.id}.pfx`), req.file.buffer);
+        certStorageName = `${userId}${path.extname(req.file.originalname || '.pfx') || '.pfx'}`;
+        await fs.writeFile(path.join(certDir, certStorageName), req.file.buffer);
       }
 
-      registros.push(registro);
-      await fs.writeFile(registrosPath, JSON.stringify(registros, null, 2));
+      for (const entry of companyEntries) {
+        const normalizedCnpj = normalizeDigits(entry.cnpj);
+        if (!entry.nomeEmpresa || !normalizedCnpj) {
+          return res.status(400).json({ error: 'Preencha nome e CNPJ para cada nova empresa.' });
+        }
 
-      res.status(201).json({ ok: true, codigoEmpresa, message: 'Cadastro realizado com sucesso!' });
+        const existingMasterForCnpj = registry.companies.find(
+          (company) => normalizeDigits(company.cnpj) === normalizedCnpj && company.masterUserId
+        );
+
+        if (existingMasterForCnpj) {
+          return res.status(409).json({ error: `Ja existe usuario master para o CNPJ ${entry.cnpj}.` });
+        }
+
+        const cnpjExists = registry.companies.some((company) => normalizeDigits(company.cnpj) === normalizedCnpj)
+          || newCompanies.some((company) => normalizeDigits(company.cnpj) === normalizedCnpj);
+
+        if (cnpjExists) {
+          return res.status(409).json({ error: `O CNPJ ${entry.cnpj} ja esta cadastrado.` });
+        }
+
+        const companyId = uuidv4();
+        const code = generateCompanyCode([...registry.companies, ...newCompanies]);
+        const company = {
+          id: companyId,
+          code,
+          name: String(entry.nomeEmpresa || '').trim(),
+          cnpj: normalizedCnpj,
+          address: {
+            cep: String(entry.cep || extractedCep || '').trim(),
+            street: String(entry.endereco || '').trim(),
+            city: String(entry.cidade || '').trim(),
+            state: String(entry.estado || '').trim().toUpperCase(),
+          },
+          userIds: [userId],
+          masterUserId: userAccessLevel === 'master' ? userId : null,
+          active: true,
+          createdAt: now,
+        };
+
+        if (req.file) {
+          company.certificate = {
+            originalName: req.file.originalname,
+            storedAs: certStorageName,
+            expiresAt: certificadoValidade || '',
+            hasPassword: Boolean(String(senhaCertificado || '').trim()),
+            uploadedAt: now,
+          };
+        }
+
+        newCompanies.push(company);
+        companyIds.push(companyId);
+        generatedCodes.push({ name: company.name, code });
+      }
+
+      const uniqueCompanyIds = [...new Set(companyIds)];
+      const newUser = {
+        id: userId,
+        name: String(nomeUsuario || '').trim(),
+        username: normalizedEmail,
+        email: normalizedEmail,
+        cpf: normalizedCpf,
+        roleTitle: String(cargo || '').trim(),
+        password: String(senha || ''),
+        accessLevel: userAccessLevel,
+        package: selectedPackage,
+        companyIds: uniqueCompanyIds,
+        managedBy,
+        onboardingCertificate: req.file
+          ? {
+              originalName: req.file.originalname,
+              storedAs: certStorageName,
+              expiresAt: certificadoValidade || '',
+              uploadedAt: now,
+            }
+          : null,
+        active: true,
+        createdAt: now,
+      };
+
+      registry.users.push(newUser);
+      registry.companies.push(...newCompanies);
+      await writeCompanyRegistry(registry);
+      emailVerificationStore.delete(normalizedEmail);
+
+      res.status(201).json({
+        ok: true,
+        message: 'Cadastro realizado com sucesso!',
+        companyCodes: generatedCodes,
+        linkedCompanies,
+      });
     } catch (error) {
       console.error('Erro no cadastro:', error);
       res.status(500).json({ error: 'Erro interno ao processar cadastro.' });
