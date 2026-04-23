@@ -189,6 +189,14 @@ h2 {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1rem;
+  box-shadow: 0 8px 18px rgba(32, 42, 61, 0.04);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.info-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(21, 171, 200, 0.45);
+  box-shadow: 0 16px 28px rgba(32, 42, 61, 0.1);
 }
 
 .info-card h2 {
