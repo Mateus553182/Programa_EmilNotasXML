@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -384,7 +386,12 @@ app.post('/api/cadastro/email/send-code', async (req, res) => {
     return res.json(response);
   } catch (error) {
     console.error('Falha ao enviar codigo de verificacao:', error);
-    return res.status(500).json({ error: 'Nao foi possivel enviar o codigo de verificacao por e-mail.' });
+    return res.status(500).json({
+      error:
+        error && error.message
+          ? error.message
+          : 'Nao foi possivel enviar o codigo de verificacao por e-mail.',
+    });
   }
 });
 
