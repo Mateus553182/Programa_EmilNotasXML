@@ -28,7 +28,7 @@ const { sendVerificationEmail } = require('./email-service');
 
 const app = express();
 const PORT = process.env.PORT || 3310;
-const EMAIL_CODE_TTL_MS = Number(process.env.EMAIL_CODE_TTL_MS || 10 * 60 * 1000);
+const EMAIL_CODE_TTL_MS = Number(process.env.EMAIL_CODE_TTL_MS || 30 * 60 * 1000);
 const emailVerificationStore = new Map();
 
 const upload = multer({
