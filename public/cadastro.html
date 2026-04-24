@@ -119,7 +119,7 @@
 
           <fieldset class="wizard-step hidden" id="step3">
             <legend>Certificado digital</legend>
-            <p class="step-hint">Ao enviar o certificado, tentamos extrair automaticamente o CEP para preencher os dados de endereço das empresas.</p>
+            <p class="step-hint">Ao enviar o certificado, tentamos extrair dados como CNPJ, nome da empresa e validade para agilizar o cadastro.</p>
 
             <div class="certificado-upload">
               <p class="certificado-info">
@@ -136,8 +136,8 @@
                 <label for="senhaCertificado">Senha do certificado:</label>
                 <input id="senhaCertificado" type="password" placeholder="Senha do arquivo .pfx/.p12" />
 
-                <label for="cepExtraidoCertificado">CEP extraído do certificado:</label>
-                <input id="cepExtraidoCertificado" type="text" placeholder="Não identificado" readonly />
+                <label for="cepExtraidoCertificado">Dados extraidos do certificado:</label>
+                <input id="cepExtraidoCertificado" type="text" placeholder="Nao identificado" readonly />
 
                 <label for="certificadoValidade">Validade do certificado:</label>
                 <input id="certificadoValidade" type="date" />

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emil-notas-xml-v40';
+const CACHE_NAME = 'emil-notas-xml-v43';
 const OFFLINE_URLS = [
   '/',
   '/login',

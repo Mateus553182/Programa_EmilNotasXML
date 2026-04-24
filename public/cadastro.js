@@ -44,6 +44,7 @@ let companyCounter = 0;
 let emailVerificationCodeSent = false;
 let emailVerified = false;
 let extractedAddressFromCertificate = null;
+let extractedCertificateData = null;
 
 function getAccessLevel() {
   return 'master';
@@ -264,6 +265,70 @@ function applyExtractedAddressToCompanies() {
   });
 }
 
+function lockCertField(input) {
+  if (!input) return;
+  input.readOnly = true;
+  input.classList.add('cert-locked');
+  input.title = 'Preenchido automaticamente pelo certificado digital';
+}
+
+function applyExtractedCertificateToCompanies() {
+  if (!extractedCertificateData) return;
+
+  const firstCard = empresaList.querySelector('.empresa-card');
+  if (!firstCard) return;
+
+  const companyNameInput = firstCard.querySelector('[data-field="nomeEmpresa"]');
+  const cnpjInput = firstCard.querySelector('[data-field="cnpj"]');
+
+  if (companyNameInput && extractedCertificateData.companyName) {
+    if (!companyNameInput.value.trim()) companyNameInput.value = extractedCertificateData.companyName;
+    lockCertField(companyNameInput);
+  }
+
+  if (cnpjInput && extractedCertificateData.cnpjFormatted) {
+    if (!cnpjInput.value.trim()) cnpjInput.value = extractedCertificateData.cnpjFormatted;
+    lockCertField(cnpjInput);
+  }
+}
+
+async function fetchAddressFromCep(digits, card) {
+  const enderecoInput = card.querySelector('[data-field="endereco"]');
+  const cidadeInput = card.querySelector('[data-field="cidade"]');
+  const estadoInput = card.querySelector('[data-field="estado"]');
+  const cepInput = card.querySelector('[data-field="cep"]');
+
+  // Indicador de carregamento
+  cepInput.classList.add('cep-loading');
+
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+    const data = await res.json();
+
+    if (data.erro) {
+      cepInput.classList.add('cep-error');
+      cepInput.classList.remove('cep-loading', 'cep-ok');
+      return;
+    }
+
+    if (enderecoInput && !enderecoInput.readOnly) {
+      enderecoInput.value = [data.logradouro, data.bairro].filter(Boolean).join(', ');
+    }
+    if (cidadeInput && !cidadeInput.readOnly) {
+      cidadeInput.value = data.localidade || '';
+    }
+    if (estadoInput && !estadoInput.readOnly) {
+      estadoInput.value = data.uf || '';
+    }
+
+    cepInput.classList.add('cep-ok');
+    cepInput.classList.remove('cep-loading', 'cep-error');
+  } catch {
+    cepInput.classList.add('cep-error');
+    cepInput.classList.remove('cep-loading', 'cep-ok');
+  }
+}
+
 function showFileName(file) {
   certFileName.textContent = file ? `Arquivo selecionado: ${file.name}` : '';
 }
@@ -311,6 +376,15 @@ function createCompanyCard() {
   bindMask(card.querySelector('[data-field="cnpj"]'), formatCnpj);
   bindMask(card.querySelector('[data-field="cep"]'), formatCep);
 
+  // Auto-fill endereco ao digitar CEP completo
+  const cepInput = card.querySelector('[data-field="cep"]');
+  if (cepInput) {
+    cepInput.addEventListener('input', () => {
+      const digits = cepInput.value.replace(/\D/g, '');
+      if (digits.length === 8) fetchAddressFromCep(digits, card);
+    });
+  }
+
   const nomeInput = card.querySelector('[data-field="nomeEmpresa"]');
   const cnpjInput = card.querySelector('[data-field="cnpj"]');
   if (nomeInput) nomeInput.required = true;
@@ -318,6 +392,7 @@ function createCompanyCard() {
 
   empresaList.appendChild(card);
   applyExtractedAddressToCompanies();
+  applyExtractedCertificateToCompanies();
   updateCompanyListState();
 }
 
@@ -340,10 +415,20 @@ btnProximo.addEventListener('click', () => {
       if (!checked) return;
     }
 
+    // Etapa do certificado: garante que a extracao foi feita antes de avancar
+    if (currentStep === 2 && certInput.files.length && !extractedCertificateData) {
+      await fetchCertificateAddressInfo();
+    }
+
     if (!validateCurrentStep()) return;
     if (currentStep < steps.length - 1) {
       currentStep += 1;
       showStep(currentStep);
+      // Ao entrar na etapa de empresas, aplica dados do certificado se ja extraidos
+      if (currentStep === 3) {
+        applyExtractedAddressToCompanies();
+        applyExtractedCertificateToCompanies();
+      }
     }
   })();
 });
@@ -383,6 +468,7 @@ async function fetchCertificateAddressInfo() {
   const certFile = certInput.files[0];
   if (!certFile) {
     extractedAddressFromCertificate = null;
+    extractedCertificateData = null;
     cepExtraidoCertificado.value = '';
     return;
   }
@@ -398,19 +484,41 @@ async function fetchCertificateAddressInfo() {
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || 'Nao foi possivel extrair dados de endereco do certificado.');
+      throw new Error(data.error || 'Nao foi possivel extrair dados do certificado.');
     }
 
+    extractedCertificateData = data.certificate || null;
     extractedAddressFromCertificate = {
       cep: data.cep || '',
       street: data.street || '',
       city: data.city || '',
       state: data.state || '',
     };
-    cepExtraidoCertificado.value = data.cep || 'Nao identificado';
+
+    const certificateSummary = [];
+    if (extractedCertificateData && extractedCertificateData.cnpjFormatted) {
+      certificateSummary.push(`CNPJ: ${extractedCertificateData.cnpjFormatted}`);
+    }
+    if (extractedCertificateData && extractedCertificateData.companyName) {
+      certificateSummary.push(`Empresa: ${extractedCertificateData.companyName}`);
+    }
+
+    cepExtraidoCertificado.value = certificateSummary.length
+      ? certificateSummary.join(' | ')
+      : (data.cep || 'Nao identificado');
+
+    if (extractedCertificateData && extractedCertificateData.validTo) {
+      const validadeInput = document.getElementById('certificadoValidade');
+      if (validadeInput && !validadeInput.value) {
+        validadeInput.value = String(extractedCertificateData.validTo).slice(0, 10);
+      }
+    }
+
     applyExtractedAddressToCompanies();
+    applyExtractedCertificateToCompanies();
   } catch (error) {
     extractedAddressFromCertificate = null;
+    extractedCertificateData = null;
     cepExtraidoCertificado.value = 'Nao identificado';
     message.style.color = 'var(--danger)';
     message.textContent = error.message;

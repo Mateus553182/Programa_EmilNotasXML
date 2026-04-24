@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs/promises');
 const crypto = require('crypto');
+const forge = require('node-forge');
 const { v4: uuidv4 } = require('uuid');
 
 const {
@@ -340,16 +341,137 @@ function saveEmailVerification(email, code) {
   return entry;
 }
 
-function mockAddressFromCertificate(fileName) {
-  const key = String(fileName || '').toLowerCase();
-  if (key.includes('sp')) {
-    return { cep: '01310-100', street: 'Avenida Paulista', city: 'Sao Paulo', state: 'SP' };
+function formatCnpj(value) {
+  const digits = normalizeDigits(value);
+  if (digits.length !== 14) return '';
+  return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+}
+
+function extractCnpjFromText(value) {
+  const text = String(value || '');
+  const direct = normalizeDigits(text);
+  if (direct.length === 14) return direct;
+
+  const match = text.match(/(\d{2}[\.\-\/]?\d{3}[\.\-\/]?\d{3}[\.\-\/]?\d{4}[\.\-\/]?\d{2})/);
+  if (!match) return '';
+  const digits = normalizeDigits(match[1]);
+  return digits.length === 14 ? digits : '';
+}
+
+function attrValue(attrs, shortOrName) {
+  const attr = attrs.find(
+    (item) => item && (item.shortName === shortOrName || item.name === shortOrName)
+  );
+  return attr && attr.value ? String(attr.value) : '';
+}
+
+function extractCnpjFromCn(cn) {
+  // Formato ICP-Brasil: "RAZAO SOCIAL:CNPJ" ou "RAZAO SOCIAL:CNPJ CNPJ"
+  if (!cn) return { cnpj: '', companyName: '' };
+  const colonIdx = cn.lastIndexOf(':');
+  if (colonIdx !== -1) {
+    const afterColon = cn.slice(colonIdx + 1).trim().split(' ')[0];
+    const digits = normalizeDigits(afterColon);
+    if (digits.length === 14) {
+      return { cnpj: digits, companyName: cn.slice(0, colonIdx).trim() };
+    }
   }
-  if (key.includes('rj')) {
-    return { cep: '20040-002', street: 'Rua Primeiro de Marco', city: 'Rio de Janeiro', state: 'RJ' };
+  return { cnpj: '', companyName: '' };
+}
+
+function extractCertificatePreview(fileBuffer, certificatePassword) {
+  if (!certificatePassword) {
+    throw new Error('Informe a senha do certificado para extrair os dados.');
   }
 
-  return { cep: '30140-071', street: 'Avenida Afonso Pena', city: 'Belo Horizonte', state: 'MG' };
+  let p12;
+  try {
+    const p12Der = forge.util.createBuffer(fileBuffer.toString('binary'));
+    const p12Asn1 = forge.asn1.fromDer(p12Der);
+    p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, certificatePassword);
+  } catch (error) {
+    throw new Error('Senha do certificado invalida ou arquivo .pfx/.p12 corrompido.');
+  }
+
+  const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] || [];
+  if (!certBags.length || !certBags[0].cert) {
+    throw new Error('Nao foi possivel localizar um certificado valido no arquivo enviado.');
+  }
+
+  const cert = certBags[0].cert;
+  const subjectAttrs = cert.subject && Array.isArray(cert.subject.attributes) ? cert.subject.attributes : [];
+  const issuerAttrs = cert.issuer && Array.isArray(cert.issuer.attributes) ? cert.issuer.attributes : [];
+
+  const commonName = attrValue(subjectAttrs, 'CN') || attrValue(subjectAttrs, 'commonName');
+  const organization = attrValue(subjectAttrs, 'O') || attrValue(subjectAttrs, 'organizationName');
+  const subjectSerial = attrValue(subjectAttrs, 'serialNumber');
+  const issuerName = attrValue(issuerAttrs, 'CN') || attrValue(issuerAttrs, 'commonName');
+  const subjectSummary = subjectAttrs
+    .map((item) => `${item.shortName || item.name || item.type || 'attr'}=${String(item.value || '')}`)
+    .join(' | ');
+
+  console.log('[Certificado] CN:', commonName);
+  console.log('[Certificado] O:', organization);
+  console.log('[Certificado] serialNumber:', subjectSerial);
+  console.log('[Certificado] subjectSummary:', subjectSummary);
+
+  // 1. Tenta extrair do CN no formato "RAZAO SOCIAL:CNPJ" (e-CNPJ ICP-Brasil)
+  const fromCn = extractCnpjFromCn(commonName);
+  let cnpj = fromCn.cnpj;
+  // Nome da empresa: se O for "ICP-Brasil" (generico), usa o nome extraido do CN
+  const isGenericOrg = !organization || organization.trim().toLowerCase() === 'icp-brasil';
+  let companyName = isGenericOrg ? (fromCn.companyName || '') : organization;
+
+  // 2. Tenta extrair CNPJ do campo serialNumber se ainda nao achou
+  if (!cnpj) cnpj = extractCnpjFromText(subjectSerial);
+
+  // 3. Varre todos os atributos procurando 14 digitos
+  if (!cnpj) {
+    for (const attr of subjectAttrs) {
+      const found = extractCnpjFromText(String(attr.value || ''));
+      if (found) { cnpj = found; break; }
+    }
+  }
+
+  // 4. Tenta subjectAltName (extensao padrao)
+  if (!cnpj) {
+    const altNameExtension = cert.getExtension('subjectAltName');
+    if (altNameExtension && Array.isArray(altNameExtension.altNames)) {
+      for (const altName of altNameExtension.altNames) {
+        const value = altName && (altName.value || altName.ip || altName.url || altName.email || '');
+        cnpj = extractCnpjFromText(value);
+        if (cnpj) break;
+      }
+    }
+  }
+
+  // 5. Tenta encontrar em extensoes brutas ICP-Brasil (OID 2.16.76.1.3.3 = CNPJ)
+  if (!cnpj) {
+    try {
+      const cnpjExt = cert.getExtension({ id: '2.16.76.1.3.3' });
+      if (cnpjExt) {
+        cnpj = extractCnpjFromText(String(cnpjExt.value || cnpjExt));
+      }
+    } catch (_) { /* extensao nao encontrada */ }
+  }
+
+  // Nome da empresa: prefer O, senao nome extraido do CN
+  if (!companyName) companyName = commonName || '';
+
+  console.log('[Certificado] CNPJ extraido:', cnpj || '(nao encontrado)');
+  console.log('[Certificado] Nome extraido:', companyName || '(nao encontrado)');
+
+  return {
+    companyName,
+    representativeName: commonName || '',
+    cnpj,
+    cnpjFormatted: formatCnpj(cnpj),
+    issuer: issuerName,
+    serialNumber: String(cert.serialNumber || subjectSerial || ''),
+    validFrom: cert.validity && cert.validity.notBefore ? cert.validity.notBefore.toISOString() : null,
+    validTo: cert.validity && cert.validity.notAfter ? cert.validity.notAfter.toISOString() : null,
+    subjectSummary,
+  };
 }
 
 const uploadCadastro = multer({
@@ -423,12 +545,25 @@ app.post('/api/cadastro/certificado/address-preview', (req, res) => {
     if (err) return res.status(400).json({ error: 'Erro no upload: ' + err.message });
 
     if (!req.file) {
-      return res.status(400).json({ error: 'Envie um certificado para extrair os dados de endereco.' });
+      return res.status(400).json({ error: 'Envie um certificado para extrair os dados.' });
     }
 
-    // Placeholder for real parsing from certificate metadata.
-    const preview = mockAddressFromCertificate(req.file.originalname);
-    return res.json(preview);
+    try {
+      const certificatePassword = String((req.body && req.body.senhaCertificado) || '').trim();
+      const certificate = extractCertificatePreview(req.file.buffer, certificatePassword);
+
+      return res.json({
+        cep: '',
+        street: '',
+        city: '',
+        state: '',
+        certificate,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        error: error && error.message ? error.message : 'Nao foi possivel ler os dados do certificado.',
+      });
+    }
   });
 });
 

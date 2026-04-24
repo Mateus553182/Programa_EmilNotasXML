@@ -54,6 +54,7 @@ Defina estas variaveis de ambiente antes de iniciar a aplicacao:
 - `SMTP_PASS`: senha da conta SMTP
 - `SMTP_FROM` (opcional): remetente exibido no e-mail
 - `EMAIL_CODE_TTL_MS` (opcional): expiracao do codigo em ms (padrao: `600000`)
+- `EMAIL_ALLOW_ETHEREAL` (opcional, padrao `false`): habilita inbox de teste Ethereal
 
 Exemplo PowerShell:
 
@@ -67,9 +68,17 @@ $env:SMTP_FROM="Emil NotasXML <no-reply@seudominio.com>"
 npm start
 ```
 
-### Modo teste automatico
+### Modo teste (opcional)
 
-Se SMTP nao estiver configurado, o sistema usa Ethereal Email e retorna um `previewUrl` no endpoint de envio para voce visualizar o e-mail e copiar o codigo.
+Por padrao, sem SMTP configurado o envio e bloqueado com erro claro de configuracao.
+
+Para usar inbox de teste Ethereal, habilite:
+
+```powershell
+$env:EMAIL_ALLOW_ETHEREAL="true"
+```
+
+Nesse modo, o endpoint de envio retorna `previewUrl` para visualizar o e-mail de teste.
 
 ### Rotas de tela
 
