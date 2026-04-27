@@ -29,7 +29,7 @@
             <h2>Cadastre sua operação</h2>
             <p class="subtitle-auth">Novo fluxo em 4 etapas para estruturar usuário, plano, certificado e múltiplas empresas.</p>
           </div>
-          <div class="cadastro-summary-pill">Arquitetura N:N pronta para Master e usuários comuns</div>
+
         </div>
 
         <div class="stepper">
@@ -45,13 +45,7 @@
         <form id="cadastroForm">
           <fieldset class="wizard-step" id="step1">
             <legend>Dados do usuário</legend>
-            <p class="step-hint">Este cadastro cria um usuário <strong>Master</strong>, responsável por gerenciar os usuários abaixo dele para as empresas cadastradas.</p>
-
-            <div class="codigo-empresa-box compact">
-              <span>Perfil do usuário:</span>
-              <strong>Master</strong>
-              <small>Será criado 1 usuário master por CNPJ no cadastro inicial.</small>
-            </div>
+            <p class="step-hint">Preencha seus dados pessoais e valide seu e-mail para continuar.</p>
 
             <div class="form-grid">
               <label for="nomeUsuario">Nome completo:</label>
@@ -136,8 +130,8 @@
                 <label for="senhaCertificado">Senha do certificado:</label>
                 <input id="senhaCertificado" type="password" placeholder="Senha do arquivo .pfx/.p12" />
 
-                <label for="cepExtraidoCertificado">Dados extraidos do certificado:</label>
-                <input id="cepExtraidoCertificado" type="text" placeholder="Nao identificado" readonly />
+                <label for="cepExtraidoCertificado">Dados extraídos do certificado:</label>
+                <input id="cepExtraidoCertificado" type="text" placeholder="Não identificado" readonly />
 
                 <label for="certificadoValidade">Validade do certificado:</label>
                 <input id="certificadoValidade" type="date" />
@@ -147,7 +141,7 @@
 
           <fieldset class="wizard-step hidden" id="step4">
             <legend>Empresas vinculadas</legend>
-            <p class="step-hint">Cadastre as empresas do usuário master. Cada CNPJ terá apenas um master responsável.</p>
+            <p class="step-hint">Cadastre as empresas que serão gerenciadas neste cadastro.</p>
 
             <div class="codigo-empresa-box compact companies-box">
               <span>Capacidade atual do pacote:</span>
@@ -159,7 +153,8 @@
             <p id="empresaEmpty" class="empresa-empty">Nenhuma empresa adicionada ainda.</p>
 
             <div class="empresa-actions">
-              <button type="button" id="btnAdicionarEmpresa">Adicionar empresa</button>
+              <button type="button" id="btnAdicionarEmpresa">+ Adicionar empresa</button>
+              <p id="empresaLimiteMsg" class="field-hint hidden">Limite de empresas do pacote atingido. Para adicionar mais, escolha um pacote maior.</p>
             </div>
           </fieldset>
 
@@ -176,7 +171,7 @@
             <div class="empresa-card-header">
               <div>
                 <h3 class="empresa-title">Empresa</h3>
-                <p class="empresa-subtitle">Dados da empresa que ficará sob gestão deste usuário master.</p>
+                <p class="empresa-subtitle">Dados da empresa vinculada a este cadastro.</p>
               </div>
               <button type="button" class="secondary empresa-remove">Remover</button>
             </div>
@@ -205,7 +200,7 @@
       </section>
     </main>
 
-    <footer class="page-footer container">&copy; 2026 - Emil Informatica</footer>
+    <footer class="page-footer container">&copy; 2026 - Emil Informática</footer>
     <script src="/cadastro.js"></script>
   </body>
 </html>

@@ -2,17 +2,17 @@ const PACKAGE_OPTIONS = {
   essencial: {
     label: 'Essencial',
     companyLimit: 1,
-    modeHint: 'Usuario master pode criar 1 empresa ou vincular 1 codigo existente.',
+    modeHint: 'Permite vincular 1 empresa neste cadastro inicial.',
   },
   profissional: {
     label: 'Profissional',
     companyLimit: 3,
-    modeHint: 'Permite vincular ate 3 empresas no cadastro inicial.',
+    modeHint: 'Permite vincular até 3 empresas no cadastro inicial.',
   },
   corporativo: {
     label: 'Corporativo',
     companyLimit: 10,
-    modeHint: 'Estrutura pronta para multiplas empresas e expansao operacional.',
+    modeHint: 'Estrutura pronta para múltiplas empresas e expansão operacional.',
   },
 };
 
@@ -23,6 +23,7 @@ const btnVoltar = document.getElementById('btnVoltar');
 const btnProximo = document.getElementById('btnProximo');
 const btnConcluir = document.getElementById('btnConcluir');
 const btnAdicionarEmpresa = document.getElementById('btnAdicionarEmpresa');
+const empresaLimiteMsg = document.getElementById('empresaLimiteMsg');
 const form = document.getElementById('cadastroForm');
 const message = document.getElementById('cadastroMessage');
 const uploadArea = document.getElementById('uploadArea');
@@ -230,10 +231,9 @@ function updateCompanyListState() {
   const { companyLimit } = getPackageConfig();
 
   empresaEmpty.classList.toggle('hidden', cards.length > 0);
-  btnAdicionarEmpresa.disabled = cards.length >= companyLimit;
-  btnAdicionarEmpresa.textContent = cards.length >= companyLimit
-    ? 'Limite do pacote atingido'
-    : 'Adicionar empresa';
+  const atLimit = cards.length >= companyLimit;
+  btnAdicionarEmpresa.classList.toggle('hidden', atLimit);
+  if (empresaLimiteMsg) empresaLimiteMsg.classList.toggle('hidden', !atLimit);
 
   updateCompanyCardTitles();
 }
