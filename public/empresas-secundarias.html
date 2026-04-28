@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f3742" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Emil Notas XML - Empresas Secundarias</title>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="/dashboard">
+          <img src="/logo-emil-nova.png" alt="Emil" />
+          NotasXML
+        </a>
+
+        <button class="navbar-toggle" id="navbarToggle" aria-label="Menu">&#9776;</button>
+
+        <div class="navbar-menu" id="navbarMenu">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas#certificado-digital">Importar XML</a>
+              <hr />
+              <span class="dropdown-disabled">Exportar (em breve)</span>
+              <span class="dropdown-disabled">Validar NF-e (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link" style="color:#fff;">Cadastramento <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas">Empresa principal</a>
+              <a href="/empresas-secundarias">Empresas secundarias</a>
+              <hr />
+              <span class="dropdown-disabled">Usuarios (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Relatorios <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/relatorios">Notas Fiscais</a>
+              <hr />
+              <a href="/relatorios#fechamento-mensal">Resumo mensal</a>
+              <span class="dropdown-disabled">Por fornecedor (em breve)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-user-btn nav-link" id="navUserLabel">Ola!</button>
+            <div class="nav-dropdown" style="right:0;left:auto;">
+              <a href="/alterar-senha">Alterar senha</a>
+            </div>
+          </div>
+          <button class="nav-logout-btn" data-nav-logout>Sair</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <section class="card">
+        <h2>Empresas secundarias</h2>
+        <p class="subtitle-auth">Cadastre filiais, CNPJs adicionais e outras empresas vinculadas ao mesmo plano.</p>
+
+        <div class="codigo-empresa-box compact companies-box">
+          <span>Empresa principal:</span>
+          <strong id="principalCompanyLabel">Carregando...</strong>
+          <small id="planUsageHintSecondary">Carregando limites do plano...</small>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Nova empresa secundaria</h2>
+        <form id="secondaryCompanyForm" class="form-grid company-grid-form">
+          <label for="secondaryNameInput">Nome da empresa:</label>
+          <input id="secondaryNameInput" type="text" placeholder="Razao social" required />
+
+          <label for="secondaryCnpjInput">CNPJ:</label>
+          <input id="secondaryCnpjInput" type="text" placeholder="00.000.000/0000-00" maxlength="18" required />
+
+          <label for="secondaryCepInput">CEP:</label>
+          <input id="secondaryCepInput" type="text" placeholder="00000-000" maxlength="9" />
+
+          <label for="secondaryStreetInput">Endereco:</label>
+          <input id="secondaryStreetInput" type="text" placeholder="Rua, numero, bairro" />
+
+          <label for="secondaryCityInput">Cidade:</label>
+          <input id="secondaryCityInput" type="text" placeholder="Cidade" />
+
+          <label for="secondaryStateInput">Estado:</label>
+          <input id="secondaryStateInput" type="text" placeholder="UF" maxlength="2" />
+
+          <label></label>
+          <div class="empresa-actions-inline">
+            <button id="createSecondaryBtn" type="submit">Cadastrar secundaria</button>
+          </div>
+        </form>
+        <p id="secondaryFormMessage" class="message"></p>
+      </section>
+
+      <section class="card">
+        <div class="table-header">
+          <h2>Empresas secundarias vinculadas</h2>
+          <button id="refreshSecondaryCompanies" type="button" class="secondary">Atualizar</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Codigo</th>
+                <th>Cidade/UF</th>
+                <th>Criacao</th>
+              </tr>
+            </thead>
+            <tbody id="secondaryCompaniesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/empresas-secundarias.js"></script>
+    <script src="/navbar.js"></script>
+  </body>
+</html>

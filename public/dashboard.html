@@ -22,7 +22,7 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="#importar-xml" id="navImportarXml">Importar XML</a>
+              <a href="/empresas#certificado-digital" id="navImportarXml">Importar XML</a>
               <hr />
               <span class="dropdown-disabled">Exportar (em breve)</span>
               <span class="dropdown-disabled">Validar NF-e (em breve)</span>
@@ -32,7 +32,8 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link">Cadastramento <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="/empresas">Empresas</a>
+              <a href="/empresas">Empresa principal</a>
+              <a href="/empresas-secundarias">Empresas secundarias</a>
               <hr />
               <span class="dropdown-disabled">Usuários (em breve)</span>
             </div>
@@ -41,9 +42,9 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link">Relatórios <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="#notas-fiscais" id="navNotasFiscais">Notas Fiscais</a>
+              <a href="/relatorios" id="navNotasFiscais">Notas Fiscais</a>
               <hr />
-              <span class="dropdown-disabled">Resumo mensal (em breve)</span>
+              <a href="/relatorios#fechamento-mensal">Resumo mensal</a>
               <span class="dropdown-disabled">Por fornecedor (em breve)</span>
             </div>
           </div>
@@ -62,62 +63,35 @@
     </nav>
 
     <main class="container">
-      <section class="card" id="importar-xml">
-        <h2>Importar XML</h2>
-        <form id="uploadForm" class="upload-form">
-          <input id="nomeNota" type="text" placeholder="Nome da nota (ex: Nota Fiscal dez/2025)" />
-          <input id="xmlInput" type="file" accept=".xml,.txt,text/xml,application/xml" required />
-          <button type="submit">Enviar nota</button>
-        </form>
-        <p id="uploadMessage" class="message"></p>
-      </section>
+      <section class="landing" id="importar-xml">
+        <article class="banner xml-banner">
+          <h1>Central de Notas XML</h1>
+          <p>
+            Armazene e consulte XML de NFe com seguranca, rapidez e controle.
+          </p>
+        </article>
 
-      <section class="card">
-      <section class="card" id="notas-fiscais">
-        <h2>Notas Fiscais</h2>
-        <h3 style="font-size:0.95rem;font-weight:600;color:var(--muted);margin:0.5rem 0 0.75rem;">Filtros</h3>
-        <form id="filterForm" class="filters">
-          <div class="filter-row">
-            <input id="filtroNome" type="text" placeholder="Nome da nota" />
-            <input id="filtroNumero" type="text" placeholder="Numero da NF-e" />
-            <input id="filtroChave" type="text" placeholder="Chave de acesso" />
-            <input id="filtroFornecedor" type="text" placeholder="Fornecedor (razao ou CNPJ)" />
-          </div>
-          <div class="filter-row">
-            <label class="filter-date-label">De: <input id="filtroDataDe" type="date" /></label>
-            <label class="filter-date-label">Ate: <input id="filtroDataAte" type="date" /></label>
-            <button type="submit">Buscar</button>
-            <button type="button" id="limparFiltros" class="secondary">Limpar</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="card">
-        <div class="table-header">
-          <h2>Notas cadastradas</h2>
-          <button id="atualizar">Atualizar</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Nome da Nota</th>
-                  <th>Numero da NF-e</th>
-                  <th>Serie da NF-e</th>
-                <th>CNPJ emitente</th>
-                <th>Razao emitente</th>
-                <th>Valor</th>
-                <th>Upload</th>
-                <th>Acoes</th>
-              </tr>
-            </thead>
-            <tbody id="notasBody"></tbody>
-          </table>
-        </div>
+        <section class="info-grid">
+          <article class="info-card">
+            <span class="info-icon">&#128203;</span>
+            <h2>Para que serve</h2>
+            <p>Centralizar o envio, armazenamento e consulta de XMLs de NF-e da sua empresa. Tudo em um unico lugar, seguro e organizado.</p>
+          </article>
+          <article class="info-card">
+            <span class="info-icon">&#9889;</span>
+            <h2>Como funciona</h2>
+            <p>O sistema recupera automaticamente as notas fiscais emitidas em nome da sua empresa. Voce so precisa acessar o painel para consultar e baixar.</p>
+          </article>
+          <article class="info-card">
+            <span class="info-icon">&#10003;</span>
+            <h2>Beneficios</h2>
+            <p>Menos retrabalho, acesso rapido de qualquer lugar. Busque suas notas fiscais por fornecedor, data, numero, chave de acesso e muito mais.</p>
+          </article>
+        </section>
       </section>
     </main>
 
-    <script src="/dashboard.js"></script>
+    <script src="/dashboard-home.js"></script>
     <script src="/navbar.js"></script>
   </body>
 </html>

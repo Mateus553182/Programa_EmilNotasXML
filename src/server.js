@@ -150,69 +150,92 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
   });
 });
 
-app.get('/api/empresas/me', authMiddleware, async (req, res) => {
+function getActiveUserCompanies(registry, user) {
+  const userCompanyIds = Array.isArray(user && user.companyIds) ? user.companyIds : [];
+  return registry.companies.filter(
+    (company) => company.active !== false && userCompanyIds.includes(company.id)
+  );
+}
+
+function normalizeCompanyKind(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'principal') return 'principal';
+  if (normalized === 'secundaria' || normalized === 'secondary') return 'secundaria';
+  return '';
+}
+
+function mapCompanyForResponse(company, kindFallback) {
+  return {
+    id: company.id,
+    code: company.code,
+    kind: normalizeCompanyKind(company.kind) || kindFallback,
+    name: company.name,
+    cnpj: company.cnpj || '',
+    address: {
+      cep: company.address && company.address.cep ? company.address.cep : '',
+      street: company.address && company.address.street ? company.address.street : '',
+      city: company.address && company.address.city ? company.address.city : '',
+      state: company.address && company.address.state ? company.address.state : '',
+    },
+    createdAt: company.createdAt || null,
+  };
+}
+
+function splitPrincipalAndSecondary(companies) {
+  const principal = companies.find((company) => (company.kind || '') === 'principal') || companies[0] || null;
+  const principalId = principal ? principal.id : null;
+  const secundarias = companies.filter((company) => company.id !== principalId);
+  return { principal, secundarias };
+}
+
+async function resolveAuthUser(req) {
   const registry = await readCompanyRegistry();
   const currentUser = registry.users.find((user) => user.id === req.auth.userId && user.active !== false);
 
   if (!currentUser) {
-    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+    return { registry, currentUser: null, companies: [] };
   }
 
-  const packageConfig = getUserPackageConfig(currentUser);
   const userCompanyIds = Array.isArray(currentUser.companyIds) ? currentUser.companyIds : [];
-  const companies = registry.companies
-    .filter((company) => company.active !== false && userCompanyIds.includes(company.id))
-    .map((company) => ({
-      id: company.id,
-      code: company.code,
-      name: company.name,
-      cnpj: company.cnpj || '',
-      address: {
-        cep: company.address && company.address.cep ? company.address.cep : '',
-        street: company.address && company.address.street ? company.address.street : '',
-        city: company.address && company.address.city ? company.address.city : '',
-        state: company.address && company.address.state ? company.address.state : '',
-      },
-      createdAt: company.createdAt || null,
-    }));
+  const companies = userCompanyIds
+    .map((id) => registry.companies.find((company) => company.id === id && company.active !== false))
+    .filter(Boolean)
+    .map((company, index) => mapCompanyForResponse(company, index === 0 ? 'principal' : 'secundaria'));
 
-  const canAddCompany = !Number.isFinite(packageConfig.companyLimit) || companies.length < packageConfig.companyLimit;
+  return { registry, currentUser, companies };
+}
 
-  return res.json({
-    plan: {
-      id: packageConfig.id,
-      label: packageConfig.label,
-      companyLimit: packageConfig.companyLimit,
-      userLimit: packageConfig.userLimit,
-    },
-    usage: {
-      companies: companies.length,
-    },
-    canAddCompany,
-    companies,
-  });
-});
-
-app.post('/api/empresas/me', authMiddleware, async (req, res) => {
+async function createCompanyForUser(req, preferredKind) {
   const registry = await readCompanyRegistry();
   const currentUser = registry.users.find((user) => user.id === req.auth.userId && user.active !== false);
 
   if (!currentUser) {
-    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+    return { status: 404, payload: { message: 'Usuario da sessao nao encontrado.' } };
   }
 
   if ((currentUser.accessLevel || 'common') !== 'master') {
-    return res.status(403).json({ message: 'Apenas usuario master pode cadastrar empresas.' });
+    return { status: 403, payload: { message: 'Apenas usuario master pode cadastrar empresas.' } };
   }
 
   const packageConfig = getUserPackageConfig(currentUser);
-  const userCompanyIds = Array.isArray(currentUser.companyIds) ? currentUser.companyIds : [];
-  const currentCompanies = registry.companies.filter(
-    (company) => company.active !== false && userCompanyIds.includes(company.id)
-  );
+  const existingCompanies = getActiveUserCompanies(registry, currentUser);
 
-  if (Number.isFinite(packageConfig.companyLimit) && currentCompanies.length >= packageConfig.companyLimit) {
-    return res.status(400).json({ message: 'Limite de empresas do plano atingido.' });
+  if (Number.isFinite(packageConfig.companyLimit) && existingCompanies.length >= packageConfig.companyLimit) {
+    return { status: 400, payload: { message: 'Limite de empresas do plano atingido.' } };
+  }
+
+  const requestedKind = normalizeCompanyKind(preferredKind || (req.body && req.body.kind));
+  const effectiveKind = requestedKind || (existingCompanies.length === 0 ? 'principal' : 'secundaria');
+
+  const hasPrincipal = existingCompanies.some((company) => normalizeCompanyKind(company.kind) === 'principal')
+    || existingCompanies.length > 0;
+
+  if (effectiveKind === 'principal' && hasPrincipal) {
+    return { status: 400, payload: { message: 'A empresa principal ja foi cadastrada.' } };
+  }
+
+  if (effectiveKind === 'secundaria' && !hasPrincipal) {
+    return { status: 400, payload: { message: 'Cadastre primeiro a empresa principal.' } };
   }
 
   const name = String(req.body && req.body.name ? req.body.name : '').trim();
@@ -223,16 +246,16 @@ app.post('/api/empresas/me', authMiddleware, async (req, res) => {
   const state = String(req.body && req.body.state ? req.body.state : '').trim().toUpperCase();
 
   if (!name || !normalizedCnpj) {
-    return res.status(400).json({ message: 'Informe nome da empresa e CNPJ.' });
+    return { status: 400, payload: { message: 'Informe nome da empresa e CNPJ.' } };
   }
 
   if (normalizedCnpj.length !== 14) {
-    return res.status(400).json({ message: 'CNPJ invalido. Informe 14 digitos.' });
+    return { status: 400, payload: { message: 'CNPJ invalido. Informe 14 digitos.' } };
   }
 
   const cnpjExists = registry.companies.some((company) => normalizeDigits(company.cnpj) === normalizedCnpj);
   if (cnpjExists) {
-    return res.status(409).json({ message: 'Este CNPJ ja esta cadastrado.' });
+    return { status: 409, payload: { message: 'Este CNPJ ja esta cadastrado.' } };
   }
 
   const companyId = uuidv4();
@@ -242,6 +265,7 @@ app.post('/api/empresas/me', authMiddleware, async (req, res) => {
   const company = {
     id: companyId,
     code,
+    kind: effectiveKind,
     name,
     cnpj: normalizedCnpj,
     address: {
@@ -264,17 +288,77 @@ app.post('/api/empresas/me', authMiddleware, async (req, res) => {
   registry.companies.push(company);
   await writeCompanyRegistry(registry);
 
-  return res.status(201).json({
-    message: 'Empresa cadastrada com sucesso.',
-    company: {
-      id: company.id,
-      code: company.code,
-      name: company.name,
-      cnpj: company.cnpj,
-      address: company.address,
-      createdAt: company.createdAt,
+  return {
+    status: 201,
+    payload: {
+      message: 'Empresa cadastrada com sucesso.',
+      company: mapCompanyForResponse(company, effectiveKind),
     },
+  };
+}
+
+app.get('/api/empresas/me', authMiddleware, async (req, res) => {
+  const { registry, currentUser, companies } = await resolveAuthUser(req);
+
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const packageConfig = getUserPackageConfig(currentUser);
+  const { principal, secundarias } = splitPrincipalAndSecondary(companies);
+
+  const canAddCompany = !Number.isFinite(packageConfig.companyLimit) || companies.length < packageConfig.companyLimit;
+
+  return res.json({
+    plan: {
+      id: packageConfig.id,
+      label: packageConfig.label,
+      companyLimit: packageConfig.companyLimit,
+      userLimit: packageConfig.userLimit,
+    },
+    usage: {
+      companies: companies.length,
+    },
+    canAddCompany,
+    principal,
+    secundarias,
+    companies,
   });
+});
+
+app.post('/api/empresas/me', authMiddleware, async (req, res) => {
+  const result = await createCompanyForUser(req, null);
+  return res.status(result.status).json(result.payload);
+});
+
+app.get('/api/empresas/principal', authMiddleware, async (req, res) => {
+  const { currentUser, companies } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const { principal } = splitPrincipalAndSecondary(companies);
+  return res.json({ principal });
+});
+
+app.post('/api/empresas/principal', authMiddleware, async (req, res) => {
+  const result = await createCompanyForUser(req, 'principal');
+  return res.status(result.status).json(result.payload);
+});
+
+app.get('/api/empresas/secundarias', authMiddleware, async (req, res) => {
+  const { currentUser, companies } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const { secundarias } = splitPrincipalAndSecondary(companies);
+  return res.json({ secundarias });
+});
+
+app.post('/api/empresas/secundarias', authMiddleware, async (req, res) => {
+  const result = await createCompanyForUser(req, 'secundaria');
+  return res.status(result.status).json(result.payload);
 });
 
 app.post('/api/auth/logout', authMiddleware, (req, res) => {
@@ -284,12 +368,48 @@ app.post('/api/auth/logout', authMiddleware, (req, res) => {
 });
 
 app.get('/api/notas', authMiddleware, async (req, res) => {
-  const notes = await listNotes(req.auth.companyId, req.query);
+  const { currentUser, companies } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const allowedCompanyIds = companies.map((company) => company.id);
+  if (!allowedCompanyIds.length) {
+    return res.json([]);
+  }
+
+  const requestedCompanyId = String(req.query.companyId || '').trim();
+  if (requestedCompanyId && !allowedCompanyIds.includes(requestedCompanyId)) {
+    return res.status(403).json({ message: 'Empresa selecionada nao pertence ao usuario logado.' });
+  }
+
+  const targetCompanyId = requestedCompanyId || allowedCompanyIds[0];
+  const filters = { ...req.query };
+  delete filters.companyId;
+
+  const notes = await listNotes(targetCompanyId, filters);
   res.json(notes);
 });
 
 app.post('/api/notas', authMiddleware, upload.single('xml'), async (req, res) => {
   try {
+    const { currentUser, companies } = await resolveAuthUser(req);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+    }
+
+    const allowedCompanyIds = companies.map((company) => company.id);
+    if (!allowedCompanyIds.length) {
+      return res.status(400).json({ message: 'Cadastre uma empresa antes de importar XML.' });
+    }
+
+    const requestedCompanyId = String((req.body && req.body.companyId) || '').trim();
+    if (requestedCompanyId && !allowedCompanyIds.includes(requestedCompanyId)) {
+      return res.status(403).json({ message: 'Empresa selecionada nao pertence ao usuario logado.' });
+    }
+
+    const targetCompanyId = requestedCompanyId || allowedCompanyIds[0];
+
     if (!req.file) {
       return res.status(400).json({ message: 'Arquivo XML nao enviado.' });
     }
@@ -343,7 +463,7 @@ app.post('/api/notas', authMiddleware, upload.single('xml'), async (req, res) =>
 
     const note = {
       id,
-      companyId: req.auth.companyId,
+      companyId: targetCompanyId,
       notaName,
       ...metadata,
       fileName,
@@ -361,7 +481,19 @@ app.post('/api/notas', authMiddleware, upload.single('xml'), async (req, res) =>
 });
 
 app.get('/api/notas/:id/download', authMiddleware, async (req, res) => {
-  const note = await findNoteById(req.params.id, req.auth.companyId);
+  const { currentUser, companies } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const allowedCompanyIds = companies.map((company) => company.id);
+  let note = null;
+
+  for (const companyId of allowedCompanyIds) {
+    // eslint-disable-next-line no-await-in-loop
+    note = await findNoteById(req.params.id, companyId);
+    if (note) break;
+  }
 
   if (!note) {
     return res.status(404).json({ message: 'Nota nao encontrada.' });
@@ -371,7 +503,19 @@ app.get('/api/notas/:id/download', authMiddleware, async (req, res) => {
 });
 
 app.delete('/api/notas/:id', authMiddleware, async (req, res) => {
-  const removed = await removeNote(req.params.id, req.auth.companyId);
+  const { currentUser, companies } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const allowedCompanyIds = companies.map((company) => company.id);
+  let removed = false;
+
+  for (const companyId of allowedCompanyIds) {
+    // eslint-disable-next-line no-await-in-loop
+    removed = await removeNote(req.params.id, companyId);
+    if (removed) break;
+  }
 
   if (!removed) {
     return res.status(404).json({ message: 'Nota nao encontrada.' });
@@ -809,6 +953,14 @@ app.get('/dashboard', (req, res) => {
 
 app.get('/empresas', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'empresas.html'));
+});
+
+app.get('/empresas-secundarias', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'empresas-secundarias.html'));
+});
+
+app.get('/relatorios', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'relatorios.html'));
 });
 
 app.get('/alterar-senha', (req, res) => {

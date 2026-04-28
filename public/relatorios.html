@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f3742" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Emil Notas XML - Relatorios</title>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="/dashboard">
+          <img src="/logo-emil-nova.png" alt="Emil" />
+          NotasXML
+        </a>
+
+        <button class="navbar-toggle" id="navbarToggle" aria-label="Menu">&#9776;</button>
+
+        <div class="navbar-menu" id="navbarMenu">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas#certificado-digital">Importar XML</a>
+              <hr />
+              <span class="dropdown-disabled">Exportar (em breve)</span>
+              <span class="dropdown-disabled">Validar NF-e (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Cadastramento <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas">Empresa principal</a>
+              <a href="/empresas-secundarias">Empresas secundarias</a>
+              <hr />
+              <span class="dropdown-disabled">Usuarios (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link" style="color:#fff;">Relatorios <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/relatorios">Notas Fiscais</a>
+              <hr />
+              <a href="#fechamento-mensal">Resumo mensal</a>
+              <span class="dropdown-disabled">Por fornecedor (em breve)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-user-btn nav-link" id="navUserLabel">Ola!</button>
+            <div class="nav-dropdown" style="right:0;left:auto;">
+              <a href="/alterar-senha">Alterar senha</a>
+            </div>
+          </div>
+          <button class="nav-logout-btn" data-nav-logout>Sair</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <section class="card report-shell">
+        <div class="report-head">
+          <div>
+            <h2>Relatorio de Notas Fiscais</h2>
+            <p class="subtitle-auth">Visao moderna dos documentos fiscais com filtros por empresa.</p>
+          </div>
+          <button id="btnAtualizarRelatorio" type="button" class="secondary">Sincronizar agora</button>
+        </div>
+
+        <div class="report-toolbar">
+          <label for="companyFilterSelect">Empresa</label>
+          <select id="companyFilterSelect"></select>
+
+          <label for="searchNotesInput">Pesquisar</label>
+          <input id="searchNotesInput" type="text" placeholder="Numero, fornecedor, chave..." />
+        </div>
+
+        <div class="report-kpis">
+          <article>
+            <span>Documentos</span>
+            <strong id="kpiQuantidade">0</strong>
+          </article>
+          <article>
+            <span>Valor total</span>
+            <strong id="kpiValor">R$ 0,00</strong>
+          </article>
+          <article>
+            <span>Ultimo envio</span>
+            <strong id="kpiUltimo">-</strong>
+          </article>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>N da nota</th>
+                <th>Chave</th>
+                <th>Emitido</th>
+                <th>Situacao</th>
+                <th>Prestador</th>
+                <th>Valor (R$)</th>
+                <th>Info</th>
+              </tr>
+            </thead>
+            <tbody id="reportNotesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card" id="fechamento-mensal">
+        <div class="table-header">
+          <h2>Fechamento mensal</h2>
+          <button id="btnGerarFechamento" type="button">Gerar resumo</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Periodo</th>
+                <th>Empresa</th>
+                <th>Quantidade</th>
+                <th>Valor total</th>
+              </tr>
+            </thead>
+            <tbody id="monthlyReportBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/relatorios.js"></script>
+    <script src="/navbar.js"></script>
+  </body>
+</html>

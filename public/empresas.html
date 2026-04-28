@@ -22,7 +22,7 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="/dashboard#importar-xml">Importar XML</a>
+              <a href="/empresas#certificado-digital">Importar XML</a>
               <hr />
               <span class="dropdown-disabled">Exportar (em breve)</span>
               <span class="dropdown-disabled">Validar NF-e (em breve)</span>
@@ -32,7 +32,8 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link" style="color:#fff;">Cadastramento <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="/empresas">Empresas</a>
+              <a href="/empresas">Empresa principal</a>
+              <a href="/empresas-secundarias">Empresas secundarias</a>
               <hr />
               <span class="dropdown-disabled">Usuários (em breve)</span>
             </div>
@@ -41,9 +42,9 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link">Relatórios <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="/dashboard#notas-fiscais">Notas Fiscais</a>
+              <a href="/relatorios">Notas Fiscais</a>
               <hr />
-              <span class="dropdown-disabled">Resumo mensal (em breve)</span>
+              <a href="/relatorios#fechamento-mensal">Resumo mensal</a>
               <span class="dropdown-disabled">Por fornecedor (em breve)</span>
             </div>
           </div>
@@ -63,8 +64,8 @@
 
     <main class="container">
       <section class="card">
-        <h2>Empresas</h2>
-        <p class="subtitle-auth">Cadastre e acompanhe as empresas vinculadas ao seu plano.</p>
+        <h2>Empresa principal</h2>
+        <p class="subtitle-auth">Cadastre a empresa principal vinculada ao seu plano. As empresas secundarias ficam em uma tela separada.</p>
 
         <div class="codigo-empresa-box compact companies-box">
           <span>Plano atual:</span>
@@ -73,7 +74,7 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" id="certificado-digital">
         <h2>Certificado digital</h2>
         <p class="step-hint">Envie o certificado <strong>.pfx</strong> ou <strong>.p12</strong> para extrair automaticamente CNPJ e nome da empresa. Os dados preenchem o formulário abaixo.</p>
 
@@ -89,6 +90,9 @@
             <label for="certPasswordInput">Senha do certificado:</label>
             <input id="certPasswordInput" type="password" placeholder="Senha do arquivo .pfx/.p12" />
 
+            <label></label>
+            <button id="certExtractBtn" type="button" class="secondary">Extrair dados do certificado</button>
+
             <label for="certExtractedInfo">Dados extraídos:</label>
             <input id="certExtractedInfo" type="text" placeholder="—" readonly />
 
@@ -100,7 +104,8 @@
       </section>
 
       <section class="card">
-        <h2>Nova empresa</h2>
+        <h2>Cadastro da empresa principal</h2>
+        <p class="step-hint">Use esta tela apenas para a empresa principal. Para novas vinculacoes secundarias, use o menu Cadastramento > Empresas secundarias.</p>
         <form id="companyForm" class="form-grid company-grid-form">
           <label for="companyNameInput">Nome da empresa:</label>
           <input id="companyNameInput" type="text" placeholder="Razao social" required />
@@ -128,9 +133,9 @@
         <p id="companyFormMessage" class="message"></p>
       </section>
 
-      <section class="card">
+      <section class="card" id="empresas-vinculadas">
         <div class="table-header">
-          <h2>Empresas vinculadas</h2>
+          <h2>Empresa principal cadastrada</h2>
           <button id="refreshCompanies" type="button" class="secondary">Atualizar</button>
         </div>
 
