@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f3742" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Emil Notas XML - Empresas</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <img class="brand-logo" src="/logo-emil-nova.png" alt="Logo Emil" />
+          <span>NotasXML</span>
+        </div>
+        <div id="sessionInfo" class="session-info">
+          <span id="companyName"></span>
+          <a class="top-btn secondary" href="/dashboard">Painel</a>
+          <button id="logoutBtn" type="button" class="top-btn">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>Empresas</h2>
+        <p class="subtitle-auth">Cadastre e acompanhe as empresas vinculadas ao seu plano.</p>
+
+        <div class="codigo-empresa-box compact companies-box">
+          <span>Plano atual:</span>
+          <strong id="planLabel">-</strong>
+          <small id="planUsageHint">Carregando...</small>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Certificado digital</h2>
+        <p class="step-hint">Envie o certificado <strong>.pfx</strong> ou <strong>.p12</strong> para extrair automaticamente CNPJ e nome da empresa. Os dados preenchem o formulário abaixo.</p>
+
+        <div class="certificado-upload">
+          <div class="upload-area" id="certUploadArea">
+            <span class="upload-icon">&#128274;</span>
+            <p>Arraste o arquivo aqui ou clique para selecionar</p>
+            <input id="certFileInput" type="file" accept=".pfx,.p12" />
+          </div>
+          <p id="certFileName" class="certificado-file-name"></p>
+
+          <div class="form-grid cert-grid">
+            <label for="certPasswordInput">Senha do certificado:</label>
+            <input id="certPasswordInput" type="password" placeholder="Senha do arquivo .pfx/.p12" />
+
+            <label for="certExtractedInfo">Dados extraídos:</label>
+            <input id="certExtractedInfo" type="text" placeholder="—" readonly />
+
+            <label for="certValidadeInput">Validade:</label>
+            <input id="certValidadeInput" type="date" readonly />
+          </div>
+        </div>
+        <p id="certMessage" class="message"></p>
+      </section>
+
+      <section class="card">
+        <h2>Nova empresa</h2>
+        <form id="companyForm" class="form-grid company-grid-form">
+          <label for="companyNameInput">Nome da empresa:</label>
+          <input id="companyNameInput" type="text" placeholder="Razao social" required />
+
+          <label for="companyCnpjInput">CNPJ:</label>
+          <input id="companyCnpjInput" type="text" placeholder="00.000.000/0000-00" maxlength="18" required />
+
+          <label for="companyCepInput">CEP:</label>
+          <input id="companyCepInput" type="text" placeholder="00000-000" maxlength="9" />
+
+          <label for="companyStreetInput">Endereco:</label>
+          <input id="companyStreetInput" type="text" placeholder="Rua, numero, bairro" />
+
+          <label for="companyCityInput">Cidade:</label>
+          <input id="companyCityInput" type="text" placeholder="Cidade" />
+
+          <label for="companyStateInput">Estado:</label>
+          <input id="companyStateInput" type="text" placeholder="UF" maxlength="2" />
+
+          <label></label>
+          <div class="empresa-actions-inline">
+            <button id="createCompanyBtn" type="submit">Cadastrar empresa</button>
+          </div>
+        </form>
+        <p id="companyFormMessage" class="message"></p>
+      </section>
+
+      <section class="card">
+        <div class="table-header">
+          <h2>Empresas vinculadas</h2>
+          <button id="refreshCompanies" type="button" class="secondary">Atualizar</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Codigo</th>
+                <th>Cidade/UF</th>
+                <th>Criacao</th>
+              </tr>
+            </thead>
+            <tbody id="companiesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/empresas.js"></script>
+  </body>
+</html>

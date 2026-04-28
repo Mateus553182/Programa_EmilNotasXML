@@ -874,6 +874,15 @@ input.cep-error {
   margin-top: 1rem;
 }
 
+.company-grid-form {
+  grid-template-columns: 170px 1fr;
+}
+
+.empresa-actions-inline {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .acesso-page {
   position: relative;
 }
@@ -975,6 +984,18 @@ input.cep-error {
   .cadastro-hero,
   .empresa-card-header {
     flex-direction: column;
+  }
+
+  .company-grid-form {
+    grid-template-columns: 1fr;
+  }
+
+  .empresa-actions-inline {
+    justify-content: stretch;
+  }
+
+  .empresa-actions-inline button {
+    width: 100%;
   }
 
   .cadastro-summary-pill {

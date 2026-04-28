@@ -1,15 +1,18 @@
-const CACHE_NAME = 'emil-notas-xml-v45';
+const CACHE_NAME = 'emil-notas-xml-v48';
 const OFFLINE_URLS = [
   '/',
   '/login',
   '/acesso',
   '/dashboard',
+  '/empresas',
   '/login.html',
   '/acesso.html',
   '/dashboard.html',
+  '/empresas.html',
   '/styles.css',
   '/login.js',
   '/dashboard.js',
+  '/empresas.js',
   '/manifest.webmanifest',
   '/logo-emil.svg',
   '/logo-emil-nova.png',
