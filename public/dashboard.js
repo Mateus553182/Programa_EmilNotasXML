@@ -217,7 +217,7 @@ async function bootstrapSession() {
 
   try {
     const data = await request('/api/auth/me');
-    companyName.textContent = data.company.name;
+    companyName.textContent = data.user ? (data.user.name || data.user.email || '') : '';
     await loadNotes();
   } catch {
     forceLogin();

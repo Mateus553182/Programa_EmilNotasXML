@@ -135,6 +135,35 @@ function createToken() {
   return `${crypto.randomUUID()}-${crypto.randomBytes(16).toString('hex')}`;
 }
 
+async function loginByEmail(email, password) {
+  const { users } = await readCompanyRegistry();
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+
+  const user = users.find(
+    (item) =>
+      item.active !== false &&
+      String(item.email || '').trim().toLowerCase() === normalizedEmail &&
+      String(item.password || '') === String(password || '')
+  );
+
+  if (!user) return null;
+
+  const token = createToken();
+  const session = {
+    token,
+    userId: user.id || null,
+    userName: user.name || user.username || '',
+    username: user.username || user.email || '',
+    email: user.email || '',
+    accessLevel: user.accessLevel || 'master',
+    companyIds: Array.isArray(user.companyIds) ? user.companyIds : [],
+    createdAt: new Date().toISOString(),
+  };
+
+  sessions.set(token, session);
+  return session;
+}
+
 async function loginCompany(companyCode, username, password) {
   const { companies, users } = await readCompanyRegistry();
   const normalizedCode = String(companyCode || '').trim().toLowerCase();
@@ -199,6 +228,7 @@ module.exports = {
   ensureCompanies,
   readCompanyRegistry,
   writeCompanyRegistry,
+  loginByEmail,
   loginCompany,
   getSessionFromToken,
   logoutSession,

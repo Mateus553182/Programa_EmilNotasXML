@@ -2,9 +2,8 @@ const TOKEN_KEY = 'emil_notas_token';
 
 const loginForm = document.getElementById('loginForm');
 const loginMessage = document.getElementById('loginMessage');
-const companyCodeInput = document.getElementById('companyCode');
-const usernameInput = document.getElementById('username');
-const companyPasswordInput = document.getElementById('companyPassword');
+const loginEmailInput = document.getElementById('loginEmail');
+const loginPasswordInput = document.getElementById('loginPassword');
 
 let authToken = localStorage.getItem(TOKEN_KEY) || '';
 const pageUrl = new URL(window.location.href);
@@ -68,7 +67,7 @@ if (loginForm) {
   loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    if (!companyCodeInput || !usernameInput || !companyPasswordInput) {
+    if (!loginEmailInput || !loginPasswordInput) {
       loginMessage.textContent = 'Tela de login desatualizada no navegador. Pressione Ctrl+F5.';
       return;
     }
@@ -80,9 +79,8 @@ if (loginForm) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyCode: companyCodeInput.value.trim(),
-          username: usernameInput.value.trim(),
-          password: companyPasswordInput.value,
+          email: loginEmailInput.value.trim(),
+          password: loginPasswordInput.value,
         }),
       });
 

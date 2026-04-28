@@ -20,6 +20,7 @@ const {
   ensureCompanies,
   readCompanyRegistry,
   writeCompanyRegistry,
+  loginByEmail,
   loginCompany,
   getSessionFromToken,
   logoutSession,
@@ -114,40 +115,37 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  const { companyCode, username, password } = req.body || {};
+  const { email, password } = req.body || {};
 
-  if (!companyCode || !username || !password) {
-    return res.status(400).json({ message: 'Informe codigo da empresa, usuario e senha.' });
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Informe e-mail e senha.' });
   }
 
-  const session = await loginCompany(companyCode, username, password);
+  const session = await loginByEmail(email, password);
 
   if (!session) {
-    return res.status(401).json({ message: 'Credenciais invalidas.' });
+    return res.status(401).json({ message: 'E-mail ou senha incorretos.' });
   }
 
   return res.json({
     token: session.token,
-    company: {
-      id: session.companyId,
-      code: session.companyCode,
-      name: session.companyName,
+    user: {
+      id: session.userId,
+      name: session.userName,
+      email: session.email,
     },
   });
 });
 
 app.get('/api/auth/me', authMiddleware, (req, res) => {
   return res.json({
-    company: {
-      id: req.auth.companyId,
-      code: req.auth.companyCode,
-      name: req.auth.companyName,
-    },
     user: {
       id: req.auth.userId,
+      name: req.auth.userName,
       username: req.auth.username,
       email: req.auth.email,
       accessLevel: req.auth.accessLevel,
+      companyIds: req.auth.companyIds || [],
     },
   });
 });

@@ -325,7 +325,7 @@ certPasswordInput.addEventListener('blur', () => {
 
   try {
     const auth = await request('/api/auth/me');
-    companyName.textContent = auth.company.name;
+    companyName.textContent = auth.user.name || auth.user.email || '';
     await loadCompanies();
   } catch {
     forceLogin();

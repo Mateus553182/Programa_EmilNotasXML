@@ -53,19 +53,16 @@
     <div class="modal-backdrop">
       <section id="loginSection" class="card login-modal" role="dialog" aria-modal="true">
         <div class="login-modal-header">
-          <h2>Informe seus dados e confirme para entrar</h2>
+          <h2>Informe seu e-mail e senha para entrar</h2>
           <a href="/login" class="close-x" aria-label="Fechar">×</a>
         </div>
 
         <form id="loginForm" class="login-modal-form">
-          <label for="companyCode">Codigo empresa:</label>
-          <input id="companyCode" type="text" required />
+          <label for="loginEmail">E-mail:</label>
+          <input id="loginEmail" type="email" placeholder="seu@email.com" required />
 
-          <label for="username">Usuario ou e-mail:</label>
-          <input id="username" type="text" placeholder="seu@email.com" required />
-
-          <label for="companyPassword">Senha:</label>
-          <input id="companyPassword" type="password" required />
+          <label for="loginPassword">Senha:</label>
+          <input id="loginPassword" type="password" required />
 
           <div class="login-modal-actions">
             <button type="submit">Confirmar</button>
