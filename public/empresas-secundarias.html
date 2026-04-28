@@ -65,7 +65,7 @@
     <main class="container">
       <section class="card">
         <h2>Empresas secundarias</h2>
-        <p class="subtitle-auth">Cadastre filiais, CNPJs adicionais e outras empresas vinculadas ao mesmo plano.</p>
+        <p class="subtitle-auth">Cadastre filiais e outras empresas vinculadas ao plano, usando os mesmos dados base do sistema de notas fiscais.</p>
 
         <div class="codigo-empresa-box compact companies-box">
           <span>Empresa principal:</span>
@@ -76,8 +76,15 @@
 
       <section class="card">
         <h2>Nova empresa secundaria</h2>
+        <p class="step-hint">Informe a razao social e o CNPJ. Ao preencher o CEP, o sistema tenta buscar endereco, cidade e estado automaticamente pelo ViaCEP.</p>
         <form id="secondaryCompanyForm" class="form-grid company-grid-form">
-          <label for="secondaryNameInput">Nome da empresa:</label>
+          <label for="secondaryCodeInput">Codigo:</label>
+          <div class="company-code-inline">
+            <input id="secondaryCodeInput" type="text" placeholder="Codigo" readonly />
+            <button id="openConsultModalBtn" type="button" class="secondary">Consultar</button>
+          </div>
+
+          <label for="secondaryNameInput">Razao social:</label>
           <input id="secondaryNameInput" type="text" placeholder="Razao social" required />
 
           <label for="secondaryCnpjInput">CNPJ:</label>
@@ -96,11 +103,18 @@
           <input id="secondaryStateInput" type="text" placeholder="UF" maxlength="2" />
 
           <label></label>
-          <div class="empresa-actions-inline">
-            <button id="createSecondaryBtn" type="submit">Cadastrar secundaria</button>
-          </div>
+          <div></div>
         </form>
+        <p class="field-hint">Endereco, cidade e estado podem ser preenchidos automaticamente a partir do CEP consultado no ViaCEP.</p>
         <p id="secondaryFormMessage" class="message"></p>
+
+        <div class="company-form-divider"></div>
+        <div class="empresa-actions-inline empresa-crud-actions company-footer-actions">
+          <button id="createSecondaryBtn" type="submit" form="secondaryCompanyForm">Incluir</button>
+          <button id="updateSecondaryBtn" type="button" class="secondary">Alterar</button>
+          <button id="deleteSecondaryBtn" type="button" class="delete-action">Excluir</button>
+          <button id="closeSecondaryPageBtn" type="button" class="close-page-action">Fechar</button>
+        </div>
       </section>
 
       <section class="card">
@@ -125,6 +139,30 @@
         </div>
       </section>
     </main>
+
+    <div id="companyConsultModal" class="company-modal-backdrop hidden">
+      <div class="company-modal card">
+        <div class="company-modal-header">
+          <h2>Consulta</h2>
+          <button id="closeConsultModalBtn" type="button" class="close-x company-close-x">&times;</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Numero</th>
+                <th>Nome</th>
+                <th>Seleciona</th>
+              </tr>
+            </thead>
+            <tbody id="consultCompaniesBody"></tbody>
+          </table>
+        </div>
+        <div class="company-modal-actions">
+          <button id="closeConsultModalFooterBtn" type="button" class="modal-close-btn">Fechar</button>
+        </div>
+      </div>
+    </div>
 
     <script src="/empresas-secundarias.js"></script>
     <script src="/navbar.js"></script>

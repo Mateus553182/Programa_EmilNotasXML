@@ -80,6 +80,31 @@
           <input id="searchNotesInput" type="text" placeholder="Numero, fornecedor, chave..." />
         </div>
 
+        <div class="report-toolbar report-toolbar-extended">
+          <label for="supplierFilterInput">Fornecedor</label>
+          <input id="supplierFilterInput" type="text" placeholder="Razao social ou CNPJ do fornecedor" />
+
+          <label for="dateFromInput">Data inicial</label>
+          <input id="dateFromInput" type="date" />
+
+          <label for="dateToInput">Data final</label>
+          <input id="dateToInput" type="date" />
+
+          <label for="operationFilterSelect">Operacao</label>
+          <select id="operationFilterSelect">
+            <option value="">Todas</option>
+            <option value="entrada">Entrada</option>
+            <option value="retorno">Retorno</option>
+            <option value="devolucao">Devolucao</option>
+            <option value="outros">Outros</option>
+          </select>
+        </div>
+
+        <div class="report-actions-row">
+          <button id="btnAplicarFiltros" type="button">Aplicar filtros</button>
+          <button id="btnLimparFiltros" type="button" class="secondary">Limpar filtros</button>
+        </div>
+
         <div class="report-kpis">
           <article>
             <span>Documentos</span>
@@ -93,19 +118,38 @@
             <span>Ultimo envio</span>
             <strong id="kpiUltimo">-</strong>
           </article>
+          <article>
+            <span>Fornecedor em foco</span>
+            <strong id="kpiFornecedor">Todos</strong>
+          </article>
         </div>
+
+        <section class="report-scope-box">
+          <div>
+            <h3>Produto destinado a recuperar automaticamente notas fiscais emitidas em nome do cliente</h3>
+            <p>O relatorio agora contempla filtros por data, busca livre, busca por fornecedor, separacao por empresa e download individual das notas XML.</p>
+          </div>
+          <div class="report-badges">
+            <span class="report-badge is-live">NFe por XML</span>
+            <span class="report-badge is-planned">CTe em evolucao</span>
+            <span class="report-badge is-review">NFs/NFS-e em validacao tecnica</span>
+            <span class="report-badge is-info">API do Governo: estudo de integracao</span>
+          </div>
+        </section>
 
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>N da nota</th>
+                <th>Operacao</th>
                 <th>Chave</th>
                 <th>Emitido</th>
                 <th>Situacao</th>
                 <th>Prestador</th>
                 <th>Valor (R$)</th>
                 <th>Info</th>
+                <th>Acoes</th>
               </tr>
             </thead>
             <tbody id="reportNotesBody"></tbody>

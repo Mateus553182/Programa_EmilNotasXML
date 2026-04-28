@@ -2,14 +2,21 @@ const TOKEN_KEY = 'emil_notas_token';
 
 const companyFilterSelect = document.getElementById('companyFilterSelect');
 const searchNotesInput = document.getElementById('searchNotesInput');
+const supplierFilterInput = document.getElementById('supplierFilterInput');
+const dateFromInput = document.getElementById('dateFromInput');
+const dateToInput = document.getElementById('dateToInput');
+const operationFilterSelect = document.getElementById('operationFilterSelect');
 const btnAtualizarRelatorio = document.getElementById('btnAtualizarRelatorio');
 const btnGerarFechamento = document.getElementById('btnGerarFechamento');
+const btnAplicarFiltros = document.getElementById('btnAplicarFiltros');
+const btnLimparFiltros = document.getElementById('btnLimparFiltros');
 const reportNotesBody = document.getElementById('reportNotesBody');
 const monthlyReportBody = document.getElementById('monthlyReportBody');
 
 const kpiQuantidade = document.getElementById('kpiQuantidade');
 const kpiValor = document.getElementById('kpiValor');
 const kpiUltimo = document.getElementById('kpiUltimo');
+const kpiFornecedor = document.getElementById('kpiFornecedor');
 
 let authToken = localStorage.getItem(TOKEN_KEY) || '';
 let companyMap = new Map();
@@ -96,20 +103,48 @@ function noteStatus(note) {
   return 'Autorizada';
 }
 
+function classifyOperation(note) {
+  const baseText = [note.notaName, note.fileName, note.razaoEmitente, note.razaoDestinatario]
+    .map((item) => String(item || '').toLowerCase())
+    .join(' ');
+
+  if (baseText.includes('devol')) return 'Devolucao';
+  if (baseText.includes('retorno')) return 'Retorno';
+  if (baseText.includes('entrada')) return 'Entrada';
+  return 'Outros';
+}
+
 function filteredNotes() {
   const term = String(searchNotesInput.value || '').trim().toLowerCase();
-  if (!term) return allNotes;
+  const supplierTerm = String(supplierFilterInput.value || '').trim().toLowerCase();
+  const dateFrom = dateFromInput.value;
+  const dateTo = dateToInput.value;
+  const operation = operationFilterSelect.value;
 
   return allNotes.filter((note) => {
-    return [
+    const haystack = [
       note.numero,
       note.chave,
       note.razaoEmitente,
       note.cnpjEmitente,
       note.notaName,
-    ]
+    ].map((item) => String(item || '').toLowerCase());
+
+    const matchesSearch = !term || haystack.some((value) => value.includes(term));
+    const matchesSupplier = !supplierTerm || [note.razaoEmitente, note.cnpjEmitente]
       .map((item) => String(item || '').toLowerCase())
-      .some((value) => value.includes(term));
+      .some((value) => value.includes(supplierTerm));
+
+    const noteDate = new Date(note.emissao || note.uploadedAt || '');
+    const matchesFrom = !dateFrom || !Number.isNaN(noteDate.getTime()) && noteDate >= new Date(dateFrom);
+    const toDate = dateTo ? new Date(dateTo) : null;
+    if (toDate) toDate.setHours(23, 59, 59, 999);
+    const matchesTo = !toDate || !Number.isNaN(noteDate.getTime()) && noteDate <= toDate;
+
+    const noteOperation = classifyOperation(note).toLowerCase();
+    const matchesOperation = !operation || noteOperation === operation;
+
+    return matchesSearch && matchesSupplier && matchesFrom && matchesTo && matchesOperation;
   });
 }
 
@@ -126,26 +161,64 @@ function renderKpis(notes) {
     .pop();
 
   kpiUltimo.textContent = last ? formatDate(last) : '-';
+  kpiFornecedor.textContent = supplierFilterInput.value.trim() || 'Todos';
+}
+
+async function downloadNote(noteId) {
+  const response = await fetch(`/api/notas/${noteId}/download`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.message || 'Falha ao baixar XML.');
+  }
+
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = blobUrl;
+  anchor.download = `${noteId}.xml`;
+  anchor.click();
+  URL.revokeObjectURL(blobUrl);
 }
 
 function renderNotesTable(notes) {
   if (!notes.length) {
-    reportNotesBody.innerHTML = '<tr><td colspan="7">Nenhuma nota encontrada para esta empresa.</td></tr>';
+    reportNotesBody.innerHTML = '<tr><td colspan="9">Nenhuma nota encontrada para esta empresa.</td></tr>';
     return;
   }
 
   reportNotesBody.innerHTML = '';
   notes.forEach((note) => {
     const tr = document.createElement('tr');
+    const operation = classifyOperation(note);
     tr.innerHTML = `
       <td>${note.numero || '-'}</td>
+      <td>${operation}</td>
       <td>${note.chave || '-'}</td>
       <td>${formatDate(note.emissao || note.uploadedAt)}</td>
       <td>${noteStatus(note)}</td>
       <td>${note.razaoEmitente || '-'}</td>
       <td>${note.valorTotal || toCurrency(0)}</td>
       <td>Completa</td>
+      <td class="actions"></td>
     `;
+
+    const actionsCell = tr.querySelector('.actions');
+    const downloadBtn = document.createElement('button');
+    downloadBtn.type = 'button';
+    downloadBtn.className = 'secondary';
+    downloadBtn.textContent = 'Baixar XML';
+    downloadBtn.addEventListener('click', async () => {
+      try {
+        await downloadNote(note.id);
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    actionsCell.appendChild(downloadBtn);
     reportNotesBody.appendChild(tr);
   });
 }
@@ -213,6 +286,15 @@ async function loadNotesByCompany(companyId) {
   refreshVisuals();
 }
 
+function clearFilters() {
+  searchNotesInput.value = '';
+  supplierFilterInput.value = '';
+  dateFromInput.value = '';
+  dateToInput.value = '';
+  operationFilterSelect.value = '';
+  refreshVisuals();
+}
+
 async function bootstrap() {
   if (!authToken) {
     forceLogin();
@@ -237,9 +319,12 @@ companyFilterSelect.addEventListener('change', async () => {
 });
 
 searchNotesInput.addEventListener('input', refreshVisuals);
+supplierFilterInput.addEventListener('input', refreshVisuals);
 btnAtualizarRelatorio.addEventListener('click', async () => {
   await loadNotesByCompany(selectedCompanyId);
 });
 btnGerarFechamento.addEventListener('click', refreshVisuals);
+btnAplicarFiltros.addEventListener('click', refreshVisuals);
+btnLimparFiltros.addEventListener('click', clearFilters);
 
 bootstrap();

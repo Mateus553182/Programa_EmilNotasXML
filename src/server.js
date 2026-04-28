@@ -297,6 +297,52 @@ async function createCompanyForUser(req, preferredKind) {
   };
 }
 
+async function getOwnedSecondaryCompany(req, companyId) {
+  const { registry, currentUser } = await resolveAuthUser(req);
+
+  if (!currentUser) {
+    return { registry, currentUser: null, company: null };
+  }
+
+  const ownedIds = Array.isArray(currentUser.companyIds) ? currentUser.companyIds : [];
+  const company = registry.companies.find(
+    (item) => item.id === companyId
+      && item.active !== false
+      && ownedIds.includes(item.id)
+      && normalizeCompanyKind(item.kind) === 'secundaria'
+  ) || null;
+
+  return { registry, currentUser, company };
+}
+
+function updateCompanyFromPayload(company, body) {
+  const name = String(body && body.name ? body.name : '').trim();
+  const normalizedCnpj = normalizeDigits(body && body.cnpj ? body.cnpj : '');
+  const cep = String(body && body.cep ? body.cep : '').trim();
+  const street = String(body && body.street ? body.street : '').trim();
+  const city = String(body && body.city ? body.city : '').trim();
+  const state = String(body && body.state ? body.state : '').trim().toUpperCase();
+
+  if (!name || !normalizedCnpj) {
+    return { error: 'Informe nome da empresa e CNPJ.' };
+  }
+
+  if (normalizedCnpj.length !== 14) {
+    return { error: 'CNPJ invalido. Informe 14 digitos.' };
+  }
+
+  company.name = name;
+  company.cnpj = normalizedCnpj;
+  company.address = {
+    cep,
+    street,
+    city,
+    state,
+  };
+
+  return { company };
+}
+
 app.get('/api/empresas/me', authMiddleware, async (req, res) => {
   const { registry, currentUser, companies } = await resolveAuthUser(req);
 
@@ -359,6 +405,61 @@ app.get('/api/empresas/secundarias', authMiddleware, async (req, res) => {
 app.post('/api/empresas/secundarias', authMiddleware, async (req, res) => {
   const result = await createCompanyForUser(req, 'secundaria');
   return res.status(result.status).json(result.payload);
+});
+
+app.get('/api/empresas/secundarias/:id', authMiddleware, async (req, res) => {
+  const { currentUser, company } = await getOwnedSecondaryCompany(req, req.params.id);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  if (!company) {
+    return res.status(404).json({ message: 'Empresa secundaria nao encontrada.' });
+  }
+
+  return res.json({ company: mapCompanyForResponse(company, 'secundaria') });
+});
+
+app.put('/api/empresas/secundarias/:id', authMiddleware, async (req, res) => {
+  const { registry, currentUser, company } = await getOwnedSecondaryCompany(req, req.params.id);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  if (!company) {
+    return res.status(404).json({ message: 'Empresa secundaria nao encontrada.' });
+  }
+
+  const duplicateCnpj = registry.companies.find(
+    (item) => item.id !== company.id && item.active !== false && normalizeDigits(item.cnpj) === normalizeDigits(req.body && req.body.cnpj)
+  );
+  if (duplicateCnpj) {
+    return res.status(409).json({ message: 'Este CNPJ ja esta cadastrado.' });
+  }
+
+  const result = updateCompanyFromPayload(company, req.body || {});
+  if (result.error) {
+    return res.status(400).json({ message: result.error });
+  }
+
+  await writeCompanyRegistry(registry);
+  return res.json({ message: 'Empresa secundaria atualizada com sucesso.', company: mapCompanyForResponse(company, 'secundaria') });
+});
+
+app.delete('/api/empresas/secundarias/:id', authMiddleware, async (req, res) => {
+  const { registry, currentUser, company } = await getOwnedSecondaryCompany(req, req.params.id);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  if (!company) {
+    return res.status(404).json({ message: 'Empresa secundaria nao encontrada.' });
+  }
+
+  company.active = false;
+  currentUser.companyIds = (currentUser.companyIds || []).filter((id) => id !== company.id);
+  await writeCompanyRegistry(registry);
+  return res.status(204).send();
 });
 
 app.post('/api/auth/logout', authMiddleware, (req, res) => {
