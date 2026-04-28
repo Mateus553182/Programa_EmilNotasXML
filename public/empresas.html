@@ -9,19 +9,57 @@
     <title>Emil Notas XML - Empresas</title>
   </head>
   <body>
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="brand">
-          <img class="brand-logo" src="/logo-emil-nova.png" alt="Logo Emil" />
-          <span>NotasXML</span>
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="/dashboard">
+          <img src="/logo-emil-nova.png" alt="Emil" />
+          NotasXML
+        </a>
+
+        <button class="navbar-toggle" id="navbarToggle" aria-label="Menu">&#9776;</button>
+
+        <div class="navbar-menu" id="navbarMenu">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/dashboard#importar-xml">Importar XML</a>
+              <hr />
+              <span class="dropdown-disabled">Exportar (em breve)</span>
+              <span class="dropdown-disabled">Validar NF-e (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link" style="color:#fff;">Cadastramento <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas">Empresas</a>
+              <hr />
+              <span class="dropdown-disabled">Usuários (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Relatórios <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/dashboard#notas-fiscais">Notas Fiscais</a>
+              <hr />
+              <span class="dropdown-disabled">Resumo mensal (em breve)</span>
+              <span class="dropdown-disabled">Por fornecedor (em breve)</span>
+            </div>
+          </div>
         </div>
-        <div id="sessionInfo" class="session-info">
-          <span id="companyName"></span>
-          <a class="top-btn secondary" href="/dashboard">Painel</a>
-          <button id="logoutBtn" type="button" class="top-btn">Sair</button>
+
+        <div class="navbar-right">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-user-btn nav-link" id="navUserLabel">Olá!</button>
+            <div class="nav-dropdown" style="right:0;left:auto;">
+              <a href="/alterar-senha">Alterar senha</a>
+            </div>
+          </div>
+          <button class="nav-logout-btn" data-nav-logout>Sair</button>
         </div>
       </div>
-    </header>
+    </nav>
 
     <main class="container">
       <section class="card">
@@ -114,5 +152,6 @@
     </main>
 
     <script src="/empresas.js"></script>
+    <script src="/navbar.js"></script>
   </body>
 </html>

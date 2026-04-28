@@ -9,23 +9,61 @@
     <title>Emil Notas XML - Painel</title>
   </head>
   <body>
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="brand">
-          <img class="brand-logo" src="/logo-emil-nova.png" alt="Logo Emil" />
-          <span>NotasXML</span>
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="/dashboard">
+          <img src="/logo-emil-nova.png" alt="Emil" />
+          NotasXML
+        </a>
+
+        <button class="navbar-toggle" id="navbarToggle" aria-label="Menu">&#9776;</button>
+
+        <div class="navbar-menu" id="navbarMenu">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="#importar-xml" id="navImportarXml">Importar XML</a>
+              <hr />
+              <span class="dropdown-disabled">Exportar (em breve)</span>
+              <span class="dropdown-disabled">Validar NF-e (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Cadastramento <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas">Empresas</a>
+              <hr />
+              <span class="dropdown-disabled">Usuários (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Relatórios <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="#notas-fiscais" id="navNotasFiscais">Notas Fiscais</a>
+              <hr />
+              <span class="dropdown-disabled">Resumo mensal (em breve)</span>
+              <span class="dropdown-disabled">Por fornecedor (em breve)</span>
+            </div>
+          </div>
         </div>
-        <div id="sessionInfo" class="session-info">
-          <span id="companyName"></span>
-          <a href="/empresas" class="top-btn secondary">Empresas</a>
-          <button id="logoutBtn" type="button" class="top-btn">Sair</button>
+
+        <div class="navbar-right">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-user-btn nav-link" id="navUserLabel">Olá!</button>
+            <div class="nav-dropdown" style="right:0;left:auto;">
+              <a href="/alterar-senha">Alterar senha</a>
+            </div>
+          </div>
+          <button class="nav-logout-btn" data-nav-logout>Sair</button>
         </div>
       </div>
-    </header>
+    </nav>
 
     <main class="container">
-      <section class="card">
-        <h2>Enviar XML</h2>
+      <section class="card" id="importar-xml">
+        <h2>Importar XML</h2>
         <form id="uploadForm" class="upload-form">
           <input id="nomeNota" type="text" placeholder="Nome da nota (ex: Nota Fiscal dez/2025)" />
           <input id="xmlInput" type="file" accept=".xml,.txt,text/xml,application/xml" required />
@@ -35,7 +73,9 @@
       </section>
 
       <section class="card">
-        <h2>Filtros</h2>
+      <section class="card" id="notas-fiscais">
+        <h2>Notas Fiscais</h2>
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--muted);margin:0.5rem 0 0.75rem;">Filtros</h3>
         <form id="filterForm" class="filters">
           <div class="filter-row">
             <input id="filtroNome" type="text" placeholder="Nome da nota" />
@@ -78,5 +118,6 @@
     </main>
 
     <script src="/dashboard.js"></script>
+    <script src="/navbar.js"></script>
   </body>
 </html>

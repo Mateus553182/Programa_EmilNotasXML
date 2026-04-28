@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f3742" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Emil Notas XML - Alterar Senha</title>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="/dashboard">
+          <img src="/logo-emil-nova.png" alt="Emil" />
+          NotasXML
+        </a>
+
+        <button class="navbar-toggle" id="navbarToggle" aria-label="Menu">&#9776;</button>
+
+        <div class="navbar-menu" id="navbarMenu">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/dashboard#importar-xml">Importar XML</a>
+              <hr />
+              <span class="dropdown-disabled">Exportar (em breve)</span>
+              <span class="dropdown-disabled">Validar NF-e (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Cadastramento <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas">Empresas</a>
+              <hr />
+              <span class="dropdown-disabled">Usuários (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Relatórios <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/dashboard#notas-fiscais">Notas Fiscais</a>
+              <hr />
+              <span class="dropdown-disabled">Resumo mensal (em breve)</span>
+              <span class="dropdown-disabled">Por fornecedor (em breve)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-user-btn nav-link" id="navUserLabel">Olá!</button>
+            <div class="nav-dropdown" style="right:0;left:auto;">
+              <a href="/alterar-senha">Alterar senha</a>
+            </div>
+          </div>
+          <button class="nav-logout-btn" data-nav-logout>Sair</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container" style="max-width:480px;">
+      <section class="card">
+        <h2>Alterar senha</h2>
+        <p class="step-hint">Informe sua senha atual e defina a nova.</p>
+
+        <form id="alterarSenhaForm" class="form-grid">
+          <label for="senhaAtual">Senha atual:</label>
+          <input id="senhaAtual" type="password" required />
+
+          <label for="novaSenha">Nova senha:</label>
+          <input id="novaSenha" type="password" required minlength="6" />
+
+          <label for="confirmarNovaSenha">Confirmar nova senha:</label>
+          <input id="confirmarNovaSenha" type="password" required minlength="6" />
+
+          <label></label>
+          <button type="submit">Salvar nova senha</button>
+        </form>
+        <p id="alterarSenhaMsg" class="message"></p>
+      </section>
+    </main>
+
+    <script src="/alterar-senha.js"></script>
+    <script src="/navbar.js"></script>
+  </body>
+</html>

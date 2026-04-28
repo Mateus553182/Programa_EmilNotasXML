@@ -811,6 +811,43 @@ app.get('/empresas', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'empresas.html'));
 });
 
+app.get('/alterar-senha', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'alterar-senha.html'));
+});
+
+app.post('/api/auth/alterar-senha', authMiddleware, async (req, res) => {
+  const { senhaAtual, novaSenha } = req.body || {};
+
+  if (!senhaAtual || !novaSenha) {
+    return res.status(400).json({ error: 'Informe a senha atual e a nova senha.' });
+  }
+
+  if (String(novaSenha).length < 6) {
+    return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres.' });
+  }
+
+  try {
+    const registry = await readCompanyRegistry();
+    const user = registry.users.find((u) => u.id === req.auth.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (String(user.password) !== String(senhaAtual)) {
+      return res.status(401).json({ error: 'Senha atual incorreta.' });
+    }
+
+    user.password = String(novaSenha);
+    await writeCompanyRegistry(registry);
+
+    return res.json({ ok: true, message: 'Senha alterada com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error);
+    return res.status(500).json({ error: 'Erro interno ao alterar senha.' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });

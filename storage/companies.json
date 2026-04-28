@@ -1,30 +1,24 @@
 {
-  "companies": [
+  "companies": [],
+  "users": [
     {
-      "id": "empresa-demo-1",
-      "code": "emil-demo",
-      "name": "Empresa Demo Emil",
-      "users": [
-        {
-          "username": "admin",
-          "password": "123456",
-          "active": true
-        }
-      ],
-      "active": true
-    },
-    {
-      "id": "empresa-teste-1",
-      "code": "xml-teste",
-      "name": "Empresa Teste XML",
-      "users": [
-        {
-          "username": "teste",
-          "password": "teste123",
-          "active": true
-        }
-      ],
-      "active": true
+      "id": "user-teste-001",
+      "name": "João Teste",
+      "username": "joao@teste.com",
+      "email": "joao@teste.com",
+      "cpf": "12345678901",
+      "roleTitle": "Administrador",
+      "password": "teste123",
+      "accessLevel": "master",
+      "package": {
+        "id": "profissional",
+        "label": "Profissional",
+        "companyLimit": 5,
+        "userLimit": 8
+      },
+      "companyIds": [],
+      "active": true,
+      "createdAt": "2026-04-28T00:00:00.000Z"
     }
   ]
 }
