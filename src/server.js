@@ -875,9 +875,10 @@ app.post('/api/cadastro/email/send-code', async (req, res) => {
     return res.status(400).json({ error: 'Informe um e-mail valido para verificacao.' });
   }
 
+  const code = createEmailVerificationCode();
+  const verification = saveEmailVerification(email, code);
+
   try {
-    const code = createEmailVerificationCode();
-    const verification = saveEmailVerification(email, code);
     const result = await sendVerificationEmail({
       to: email,
       code,
@@ -898,6 +899,16 @@ app.post('/api/cadastro/email/send-code', async (req, res) => {
     return res.json(response);
   } catch (error) {
     console.error('Falha ao enviar codigo de verificacao:', error);
+
+    if (process.env.NODE_ENV !== 'production') {
+      return res.json({
+        ok: true,
+        message: 'Nao foi possivel entregar o e-mail neste ambiente. Use o codigo de desenvolvimento para continuar.',
+        expiresAt: new Date(verification.expiresAt).toISOString(),
+        devCode: code,
+      });
+    }
+
     return res.status(500).json({
       error:
         error && error.message
@@ -963,7 +974,6 @@ app.post('/api/cadastro', async (req, res) => {
         packageId,
         nomeUsuario,
         cpf,
-        cargo,
         email,
         emailCode,
         senha,
@@ -973,7 +983,7 @@ app.post('/api/cadastro', async (req, res) => {
       const normalizedEmail = String(email || '').trim().toLowerCase();
       const normalizedCpf = normalizeDigits(cpf);
 
-      if (!nomeUsuario || !normalizedCpf || !cargo || !normalizedEmail || !senha) {
+      if (!nomeUsuario || !normalizedCpf || !normalizedEmail || !senha) {
         return res.status(400).json({ error: 'Preencha todos os campos obrigatorios do usuario.' });
       }
 
@@ -1013,7 +1023,7 @@ app.post('/api/cadastro', async (req, res) => {
         username: normalizedEmail,
         email: normalizedEmail,
         cpf: normalizedCpf,
-        roleTitle: String(cargo || '').trim(),
+        roleTitle: '',
         password: String(senha || ''),
         accessLevel: 'master',
         package: selectedPackage,
