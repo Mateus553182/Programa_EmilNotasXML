@@ -225,12 +225,7 @@ async function createCompanyForUser(req, preferredKind) {
     return { status: 403, payload: { message: 'Apenas usuario master pode cadastrar empresas.' } };
   }
 
-  const packageConfig = getUserPackageConfig(currentUser);
   const existingCompanies = getActiveUserCompanies(registry, currentUser);
-
-  if (Number.isFinite(packageConfig.companyLimit) && existingCompanies.length >= packageConfig.companyLimit) {
-    return { status: 400, payload: { message: 'Limite de empresas do plano atingido.' } };
-  }
 
   const requestedKind = normalizeCompanyKind(preferredKind || (req.body && req.body.kind));
   const effectiveKind = requestedKind || (existingCompanies.length === 0 ? 'principal' : 'secundaria');
@@ -261,7 +256,9 @@ async function createCompanyForUser(req, preferredKind) {
     return { status: 400, payload: { message: 'CNPJ invalido. Informe 14 digitos.' } };
   }
 
-  const cnpjExists = registry.companies.some((company) => normalizeDigits(company.cnpj) === normalizedCnpj);
+  const cnpjExists = registry.companies.some(
+    (company) => company.active !== false && normalizeDigits(company.cnpj) === normalizedCnpj
+  );
   if (cnpjExists) {
     return { status: 409, payload: { message: 'Este CNPJ ja esta cadastrado.' } };
   }
@@ -364,18 +361,21 @@ app.get('/api/empresas/me', authMiddleware, async (req, res) => {
 
   const packageConfig = getUserPackageConfig(currentUser);
   const { principal, secundarias } = splitPrincipalAndSecondary(companies);
+  const nfeCurrentMonth = await countCurrentMonthNotesForCompanies(companies);
 
-  const canAddCompany = !Number.isFinite(packageConfig.companyLimit) || companies.length < packageConfig.companyLimit;
+  const canAddCompany = true;
 
   return res.json({
     plan: {
       id: packageConfig.id,
       label: packageConfig.label,
-      companyLimit: packageConfig.companyLimit,
-      userLimit: packageConfig.userLimit,
+      monthlyPrice: packageConfig.monthlyPrice,
+      nfeLimitMonthly: packageConfig.nfeLimitMonthly,
+      overagePricePerNote: packageConfig.overagePricePerNote,
     },
     usage: {
       companies: companies.length,
+      nfeCurrentMonth,
     },
     canAddCompany,
     principal,
@@ -574,6 +574,14 @@ app.post('/api/notas', authMiddleware, upload.single('xml'), async (req, res) =>
       return res.status(403).json({ message: 'Empresa selecionada nao pertence ao usuario logado.' });
     }
 
+    const packageConfig = getUserPackageConfig(currentUser);
+    const nfeCurrentMonth = await countCurrentMonthNotesForCompanies(companies);
+    if (Number.isFinite(packageConfig.nfeLimitMonthly) && nfeCurrentMonth >= packageConfig.nfeLimitMonthly) {
+      return res.status(400).json({
+        message: `Limite mensal do plano atingido (${packageConfig.nfeLimitMonthly} NFe/mes).`,
+      });
+    }
+
     const targetCompanyId = requestedCompanyId || allowedCompanyIds[0];
 
     if (!req.file) {
@@ -696,31 +704,34 @@ app.get('/', (req, res) => {
 
 /* ---- Cadastro de novo usuário + empresa ---- */
 const PACKAGE_OPTIONS = {
-  essencial: {
-    id: 'essencial',
-    label: 'Essencial',
-    companyLimit: 1,
-    userLimit: 2,
+  basico: {
+    id: 'basico',
+    label: 'Basico',
+    monthlyPrice: 49.9,
+    nfeLimitMonthly: 100,
+    overagePricePerNote: 0.5,
   },
   profissional: {
     id: 'profissional',
     label: 'Profissional',
-    companyLimit: 5,
-    userLimit: 8,
+    monthlyPrice: 99.9,
+    nfeLimitMonthly: 300,
+    overagePricePerNote: 0.33,
   },
-  corporativo: {
-    id: 'corporativo',
-    label: 'Corporativo',
-    companyLimit: null,
-    userLimit: 25,
+  standard: {
+    id: 'standard',
+    label: 'Standard',
+    monthlyPrice: 149.9,
+    nfeLimitMonthly: 1000,
+    overagePricePerNote: 0.15,
   },
 };
 
 function normalizePackageId(value) {
   const normalized = String(value || '').trim().toLowerCase();
-  if (normalized === 'essencial') return 'essencial';
+  if (normalized === 'basico' || normalized === 'essencial') return 'basico';
   if (normalized === 'profissional') return 'profissional';
-  if (normalized === 'corporativo') return 'corporativo';
+  if (normalized === 'standard' || normalized === 'corporativo') return 'standard';
   return '';
 }
 
@@ -732,8 +743,30 @@ function getUserPackageConfig(user) {
   );
 
   // Legacy users may not have package metadata persisted.
-  const fallbackPackageId = packageId || 'corporativo';
-  return PACKAGE_OPTIONS[fallbackPackageId] || PACKAGE_OPTIONS.corporativo;
+  const fallbackPackageId = packageId || 'standard';
+  return PACKAGE_OPTIONS[fallbackPackageId] || PACKAGE_OPTIONS.standard;
+}
+
+function isDateInCurrentMonth(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const now = new Date();
+  return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+}
+
+async function countCurrentMonthNotesForCompanies(companies) {
+  const companyList = Array.isArray(companies) ? companies : [];
+  const companyIds = companyList.map((company) => String(company && company.id ? company.id : '')).filter(Boolean);
+
+  let total = 0;
+  for (const companyId of companyIds) {
+    // eslint-disable-next-line no-await-in-loop
+    const notes = await listNotes(companyId, {});
+    total += notes.filter((note) => isDateInCurrentMonth(note.emissao || note.uploadedAt)).length;
+  }
+
+  return total;
 }
 
 function normalizeDigits(value) {

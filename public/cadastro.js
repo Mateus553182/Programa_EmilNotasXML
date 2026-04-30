@@ -1,15 +1,21 @@
 const PACKAGE_OPTIONS = {
-  essencial: {
-    label: 'Essencial',
-    companyLimit: 1,
+  basico: {
+    label: 'Basico',
+    monthlyPrice: 49.9,
+    nfeLimitMonthly: 100,
+    overagePricePerNote: 0.5,
   },
   profissional: {
     label: 'Profissional',
-    companyLimit: 5,
+    monthlyPrice: 99.9,
+    nfeLimitMonthly: 300,
+    overagePricePerNote: 0.33,
   },
-  corporativo: {
-    label: 'Corporativo',
-    companyLimit: null,
+  standard: {
+    label: 'Standard',
+    monthlyPrice: 149.9,
+    nfeLimitMonthly: 1000,
+    overagePricePerNote: 0.15,
   },
 };
 
@@ -34,7 +40,7 @@ let emailVerificationCodeSent = false;
 let emailVerified = false;
 
 function getPackageConfig() {
-  const packageId = form.elements.packageId.value || 'essencial';
+  const packageId = form.elements.packageId.value || 'basico';
   return {
     id: packageId,
     ...PACKAGE_OPTIONS[packageId],
@@ -162,9 +168,7 @@ function validateCurrentStep() {
 function updatePackageSummary() {
   const selectedPackage = getPackageConfig();
   selectedPackageLabel.textContent = selectedPackage.label;
-  selectedPackageHint.textContent = Number.isFinite(selectedPackage.companyLimit)
-    ? `Gerencie ate ${selectedPackage.companyLimit} empresa(s) apos o cadastro.`
-    : 'Gerencie empresas ilimitadas apos o cadastro.';
+  selectedPackageHint.textContent = `Empresas ilimitadas + ${selectedPackage.nfeLimitMonthly} NFe/mes · Excedente: R$ ${selectedPackage.overagePricePerNote.toFixed(2).replace('.', ',')} por nota.`;
 
   document.querySelectorAll('.package-card').forEach((card) => {
     const input = card.querySelector('input[name="packageId"]');

@@ -128,12 +128,13 @@ async function loadCompanies() {
   try {
     const data = await request('/api/empresas/me');
     const plan = data.plan || {};
-    const usage = (data.usage && data.usage.companies) || 0;
+    const nfeCurrentMonth = (data.usage && data.usage.nfeCurrentMonth) || 0;
+    const nfeLimitMonthly = Number.isFinite(plan.nfeLimitMonthly) ? plan.nfeLimitMonthly : null;
 
-    if (Number.isFinite(plan.companyLimit)) {
-      planUsageHint.textContent = `Plano ${plan.label || '-'} · ${usage} de ${plan.companyLimit} empresa(s) cadastrada(s).`;
+    if (nfeLimitMonthly) {
+      planUsageHint.textContent = `Plano ${plan.label || '-'} · ${nfeCurrentMonth} de ${nfeLimitMonthly} NFe usadas no mes.`;
     } else {
-      planUsageHint.textContent = `Plano ${plan.label || '-'} · ${usage} empresa(s) cadastrada(s).`;
+      planUsageHint.textContent = `Plano ${plan.label || '-'} · ${nfeCurrentMonth} NFe usadas no mes.`;
     }
 
     allCompanies = Array.isArray(data.companies) ? data.companies : [];

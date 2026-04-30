@@ -25,7 +25,7 @@ const secondaryCityInput = document.getElementById('secondaryCityInput');
 const secondaryStateInput = document.getElementById('secondaryStateInput');
 
 let authToken = localStorage.getItem(TOKEN_KEY) || '';
-let planMeta = { companyLimit: null };
+let planMeta = { nfeLimitMonthly: null };
 let secondaryCompanies = [];
 let selectedSecondaryCompanyId = '';
 
@@ -179,15 +179,15 @@ function updateSummary(data) {
 
   principalCompanyLabel.textContent = `${principal.name} (${formatCnpj(principal.cnpj || '') || '-'})`;
 
-  planMeta = data.plan || { companyLimit: null };
-  const current = data.usage && Number.isFinite(data.usage.companies) ? data.usage.companies : (1 + secundarias.length);
-  if (Number.isFinite(planMeta.companyLimit)) {
-    planUsageHintSecondary.textContent = `${current} de ${planMeta.companyLimit} empresas usadas no plano ${planMeta.label || ''}.`;
+  planMeta = data.plan || { nfeLimitMonthly: null };
+  const nfeCurrentMonth = data.usage && Number.isFinite(data.usage.nfeCurrentMonth) ? data.usage.nfeCurrentMonth : 0;
+  if (Number.isFinite(planMeta.nfeLimitMonthly)) {
+    planUsageHintSecondary.textContent = `${nfeCurrentMonth} de ${planMeta.nfeLimitMonthly} NFe usadas no mes no plano ${planMeta.label || ''}.`;
   } else {
-    planUsageHintSecondary.textContent = `${current} empresas usadas no plano ${planMeta.label || 'Corporativo'} (sem limite).`;
+    planUsageHintSecondary.textContent = `${nfeCurrentMonth} NFe usadas no mes no plano ${planMeta.label || 'Standard'}.`;
   }
 
-  createSecondaryBtn.disabled = !Boolean(data.canAddCompany);
+  createSecondaryBtn.disabled = false;
   updateSecondaryBtn.disabled = !selectedSecondaryCompanyId;
   deleteSecondaryBtn.disabled = !selectedSecondaryCompanyId;
   renderSecondaryCompanies(secundarias);

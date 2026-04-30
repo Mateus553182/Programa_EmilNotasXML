@@ -71,35 +71,35 @@
 
           <fieldset class="wizard-step hidden" id="step2">
             <legend>Escolha o plano</legend>
-            <p class="step-hint">O plano define quantas empresas e usuários você poderá gerenciar.</p>
+            <p class="step-hint">Empresas ilimitadas em todos os planos. A cobranca muda pelo volume de NFe armazenadas por mes.</p>
 
             <div class="package-grid" id="packageGrid">
-              <label class="package-card active" data-package-id="essencial">
-                <input type="radio" name="packageId" value="essencial" checked />
-                <span class="package-name">Essencial</span>
-                <strong>1 empresa</strong>
-                <small>Ideal para operação enxuta com um gestor principal.</small>
+              <label class="package-card active" data-package-id="basico">
+                <input type="radio" name="packageId" value="basico" checked />
+                <span class="package-name">Basico</span>
+                <strong>R$ 49,90 · 100 notas/mes</strong>
+                <small>R$ 0,50 por nota. Boa entrada para operacao inicial.</small>
               </label>
 
               <label class="package-card" data-package-id="profissional">
                 <input type="radio" name="packageId" value="profissional" />
                 <span class="package-name">Profissional</span>
-                <strong>Até 5 empresas</strong>
-                <small>Para quem precisa operar matriz e filiais no mesmo acesso.</small>
+                <strong>R$ 99,90 · 300 notas/mes</strong>
+                <small>R$ 0,33 por nota. Melhor custo-beneficio para crescer.</small>
               </label>
 
-              <label class="package-card" data-package-id="corporativo">
-                <input type="radio" name="packageId" value="corporativo" />
-                <span class="package-name">Corporativo</span>
-                <strong>Empresas ilimitadas</strong>
-                <small>Estrutura ampla para escritórios e operações com alto volume de clientes.</small>
+              <label class="package-card" data-package-id="standard">
+                <input type="radio" name="packageId" value="standard" />
+                <span class="package-name">Standard</span>
+                <strong>R$ 149,90 · 1.000 notas/mes</strong>
+                <small>Plano para alto volume, com empresas ilimitadas.</small>
               </label>
             </div>
 
             <div class="codigo-empresa-box compact">
               <span>Plano selecionado:</span>
-              <strong id="selectedPackageLabel">Essencial</strong>
-              <small id="selectedPackageHint">Gerencie até 1 empresa após o cadastro.</small>
+              <strong id="selectedPackageLabel">Basico</strong>
+              <small id="selectedPackageHint">Empresas ilimitadas + 100 NFe/mes · Excedente: R$ 0,50 por nota.</small>
             </div>
           </fieldset>
 
