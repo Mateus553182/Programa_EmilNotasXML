@@ -11,6 +11,8 @@ const companySearchInput = document.getElementById('companySearchInput');
 const fabAddCompany = document.getElementById('fabAddCompany');
 
 const companyModal = document.getElementById('companyModal');
+// Ensure modal is hidden on initial load
+if (companyModal) companyModal.classList.add('hidden');
 const companyModalTitle = document.getElementById('companyModalTitle');
 const companyForm = document.getElementById('companyForm');
 const companyFormMessage = document.getElementById('companyFormMessage');
@@ -375,3 +377,8 @@ async function confirmDelete(company) {
 
 // ---- Init ----
 loadCompanies();
+
+// ---- Ensure modal is hidden on page load ----
+window.addEventListener('load', () => {
+  companyModal.classList.add('hidden');
+});
