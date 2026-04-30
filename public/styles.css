@@ -1029,6 +1029,14 @@ input.cep-error {
   max-height: calc(90vh - 140px);
 }
 
+.company-modal-body .form-grid {
+  grid-template-columns: 120px 1fr;
+}
+
+.company-modal-body .form-grid label {
+  text-align: left;
+}
+
 /* Certificate section inside modal (mandatory) */
 .cert-section {
   border: 1px solid #dee2e6;
