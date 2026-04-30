@@ -37,6 +37,9 @@ const certExtractBtn = document.getElementById('certExtractBtn');
 const certValidadeInput = document.getElementById('certValidadeInput');
 const certMessage = document.getElementById('certMessage');
 
+const currentCertSection = document.getElementById('currentCertSection');
+const currentCertInfo = document.getElementById('currentCertInfo');
+
 // ---- Auth helpers ----
 function forceLogin() {
   authToken = '';
@@ -177,6 +180,8 @@ function closeModal() {
   certPasswordInput.value = '';
   certValidadeInput.value = '';
   certMessage.textContent = '';
+  currentCertSection.style.display = 'none';
+  currentCertInfo.textContent = '';
 }
 
 function openCreateModal() {
@@ -198,6 +203,29 @@ function openEditModal(company) {
   companyStreetInput.value = (company.address && company.address.street) || '';
   companyCityInput.value = (company.address && company.address.city) || '';
   companyStateInput.value = (company.address && company.address.state) || '';
+
+  // Show current certificate info if available
+  if (company.certValidTo) {
+    const validDate = new Date(company.certValidTo);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysLeft = Math.ceil((validDate - today) / (1000 * 60 * 60 * 24));
+    
+    let status = '✅ Válido';
+    let statusColor = '#2e9e6a';
+    if (daysLeft <= 0) {
+      status = '❌ Vencido';
+      statusColor = 'var(--danger)';
+    } else if (daysLeft <= 30) {
+      status = `⚠️ Vencendo em ${daysLeft} dia${daysLeft === 1 ? '' : 's'}`;
+      statusColor = '#b87500';
+    }
+    
+    currentCertInfo.innerHTML = `<strong>Válido até:</strong> ${validDate.toLocaleDateString('pt-BR')} <span style="color:${statusColor};">${status}</span>`;
+    currentCertSection.style.display = 'block';
+  } else {
+    currentCertSection.style.display = 'none';
+  }
 
   openModal();
   canOpenModal = false;
@@ -348,6 +376,7 @@ saveCompanyBtn.addEventListener('click', async () => {
     street: companyStreetInput.value.trim(),
     city: companyCityInput.value.trim(),
     state: companyStateInput.value.trim().toUpperCase(),
+    certValidTo: certValidadeInput.value || null,
   };
 
   try {

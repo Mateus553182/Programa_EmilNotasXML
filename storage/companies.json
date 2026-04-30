@@ -16,7 +16,8 @@
       ],
       "masterUserId": "user-teste-001",
       "active": true,
-      "createdAt": "2026-04-28T18:40:11.200Z"
+      "createdAt": "2026-04-28T18:40:11.200Z",
+      "certValidTo": "2026-12-31T23:59:59.000Z"
     }
   ],
   "users": [

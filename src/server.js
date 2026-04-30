@@ -184,6 +184,7 @@ function mapCompanyForResponse(company, kindFallback) {
       city: company.address && company.address.city ? company.address.city : '',
       state: company.address && company.address.state ? company.address.state : '',
     },
+    certValidTo: company.certValidTo || null,
     createdAt: company.createdAt || null,
   };
 }
@@ -329,6 +330,7 @@ function updateCompanyFromPayload(company, body) {
   const street = String(body && body.street ? body.street : '').trim();
   const city = String(body && body.city ? body.city : '').trim();
   const state = String(body && body.state ? body.state : '').trim().toUpperCase();
+  const certValidTo = body && body.certValidTo ? String(body.certValidTo) : null;
 
   if (!name || !normalizedCnpj) {
     return { error: 'Informe nome da empresa e CNPJ.' };
@@ -346,6 +348,9 @@ function updateCompanyFromPayload(company, body) {
     city,
     state,
   };
+  if (certValidTo) {
+    company.certValidTo = certValidTo;
+  }
 
   return { company };
 }
