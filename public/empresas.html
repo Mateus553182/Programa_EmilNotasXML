@@ -22,7 +22,7 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="/empresas#certificado-digital">Importar XML</a>
+              <a href="/relatorios">Importar XML</a>
               <hr />
               <span class="dropdown-disabled">Exportar (em breve)</span>
               <span class="dropdown-disabled">Validar NF-e (em breve)</span>
@@ -32,15 +32,14 @@
           <div class="nav-item" data-dropdown>
             <button class="nav-link" style="color:#fff;">Cadastramento <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
-              <a href="/empresas">Empresa principal</a>
-              <a href="/empresas-secundarias">Empresas secundarias</a>
+              <a href="/empresas">Empresas</a>
               <hr />
-              <span class="dropdown-disabled">Usuários (em breve)</span>
+              <span class="dropdown-disabled">Usuarios (em breve)</span>
             </div>
           </div>
 
           <div class="nav-item" data-dropdown>
-            <button class="nav-link">Relatórios <span class="caret">&#9660;</span></button>
+            <button class="nav-link">Relatorios <span class="caret">&#9660;</span></button>
             <div class="nav-dropdown">
               <a href="/relatorios">Notas Fiscais</a>
               <hr />
@@ -52,7 +51,7 @@
 
         <div class="navbar-right">
           <div class="nav-item" data-dropdown>
-            <button class="nav-user-btn nav-link" id="navUserLabel">Olá!</button>
+            <button class="nav-user-btn nav-link" id="navUserLabel">Ola!</button>
             <div class="nav-dropdown" style="right:0;left:auto;">
               <a href="/alterar-senha">Alterar senha</a>
             </div>
@@ -64,97 +63,102 @@
 
     <main class="container">
       <section class="card">
-        <h2>Empresa principal</h2>
-        <p class="subtitle-auth">Cadastre a empresa principal vinculada ao seu plano. As empresas secundarias ficam em uma tela separada.</p>
-
-        <div class="codigo-empresa-box compact companies-box">
-          <span>Plano atual:</span>
-          <strong id="planLabel">-</strong>
-          <small id="planUsageHint">Carregando...</small>
-        </div>
-      </section>
-
-      <section class="card" id="certificado-digital">
-        <h2>Certificado digital</h2>
-        <p class="step-hint">Envie o certificado <strong>.pfx</strong> ou <strong>.p12</strong> para extrair automaticamente CNPJ e nome da empresa. Os dados preenchem o formulário abaixo.</p>
-
-        <div class="certificado-upload">
-          <div class="upload-area" id="certUploadArea">
-            <span class="upload-icon">&#128274;</span>
-            <p>Arraste o arquivo aqui ou clique para selecionar</p>
-            <input id="certFileInput" type="file" accept=".pfx,.p12" />
-          </div>
-          <p id="certFileName" class="certificado-file-name"></p>
-
-          <div class="form-grid cert-grid">
-            <label for="certPasswordInput">Senha do certificado:</label>
-            <input id="certPasswordInput" type="password" placeholder="Senha do arquivo .pfx/.p12" />
-
-            <label></label>
-            <button id="certExtractBtn" type="button" class="secondary">Extrair dados do certificado</button>
-
-            <label for="certExtractedInfo">Dados extraídos:</label>
-            <input id="certExtractedInfo" type="text" placeholder="—" readonly />
-
-            <label for="certValidadeInput">Validade:</label>
-            <input id="certValidadeInput" type="date" readonly />
-          </div>
-        </div>
-        <p id="certMessage" class="message"></p>
-      </section>
-
-      <section class="card">
-        <h2>Cadastro da empresa principal</h2>
-        <p class="step-hint">Use esta tela apenas para a empresa principal. Para novas vinculacoes secundarias, use o menu Cadastramento > Empresas secundarias.</p>
-        <form id="companyForm" class="form-grid company-grid-form">
-          <label for="companyNameInput">Nome da empresa:</label>
-          <input id="companyNameInput" type="text" placeholder="Razao social" required />
-
-          <label for="companyCnpjInput">CNPJ:</label>
-          <input id="companyCnpjInput" type="text" placeholder="00.000.000/0000-00" maxlength="18" required />
-
-          <label for="companyCepInput">CEP:</label>
-          <input id="companyCepInput" type="text" placeholder="00000-000" maxlength="9" />
-
-          <label for="companyStreetInput">Endereco:</label>
-          <input id="companyStreetInput" type="text" placeholder="Rua, numero, bairro" />
-
-          <label for="companyCityInput">Cidade:</label>
-          <input id="companyCityInput" type="text" placeholder="Cidade" />
-
-          <label for="companyStateInput">Estado:</label>
-          <input id="companyStateInput" type="text" placeholder="UF" maxlength="2" />
-
-          <label></label>
-          <div class="empresa-actions-inline">
-            <button id="createCompanyBtn" type="submit">Cadastrar empresa</button>
-          </div>
-        </form>
-        <p id="companyFormMessage" class="message"></p>
-      </section>
-
-      <section class="card" id="empresas-vinculadas">
         <div class="table-header">
-          <h2>Empresa principal cadastrada</h2>
-          <button id="refreshCompanies" type="button" class="secondary">Atualizar</button>
+          <div>
+            <h2>Empresas</h2>
+            <p class="subtitle-auth" id="planUsageHint">Carregando...</p>
+          </div>
+        </div>
+
+        <div class="companies-search-bar">
+          <input id="companySearchInput" type="search" placeholder="&#128269; Pesquisar empresa..." />
         </div>
 
         <div class="table-wrap">
-          <table>
+          <table id="companiesTable">
             <thead>
               <tr>
-                <th>Empresa</th>
-                <th>CNPJ</th>
+                <th class="col-actions" colspan="2"></th>
                 <th>Codigo</th>
+                <th>Razao social</th>
+                <th>CNPJ</th>
                 <th>Cidade/UF</th>
-                <th>Criacao</th>
               </tr>
             </thead>
-            <tbody id="companiesBody"></tbody>
+            <tbody id="companiesBody">
+              <tr><td colspan="6">Carregando...</td></tr>
+            </tbody>
           </table>
         </div>
       </section>
     </main>
+
+    <!-- FAB button -->
+    <button id="fabAddCompany" class="fab-btn" title="Adicionar empresa">+</button>
+
+    <!-- Modal: criar / editar empresa -->
+    <div id="companyModal" class="company-modal-backdrop hidden">
+      <div class="company-modal company-form-modal card">
+        <div class="company-modal-header">
+          <h2 id="companyModalTitle">Nova empresa</h2>
+          <button id="closeCompanyModalBtn" type="button" class="close-x company-close-x">&times;</button>
+        </div>
+
+        <div class="company-modal-body">
+          <!-- Certificado digital (opcional) -->
+          <details class="cert-collapsible" id="certSection">
+            <summary>Certificado digital <span class="cert-hint-badge">(opcional)</span></summary>
+            <div class="certificado-upload modal-cert-upload">
+              <div class="upload-area upload-area-sm" id="certUploadArea">
+                <span class="upload-icon">&#128274;</span>
+                <p>Clique ou arraste o .pfx / .p12</p>
+                <input id="certFileInput" type="file" accept=".pfx,.p12" />
+              </div>
+              <p id="certFileName" class="certificado-file-name"></p>
+              <div class="form-grid cert-grid">
+                <label for="certPasswordInput">Senha:</label>
+                <div class="inline-actions">
+                  <input id="certPasswordInput" type="password" placeholder="Senha do certificado" />
+                  <button id="certExtractBtn" type="button" class="secondary">Extrair</button>
+                </div>
+                <label for="certExtractedInfo">Dados extraídos:</label>
+                <input id="certExtractedInfo" type="text" placeholder="—" readonly />
+                <label for="certValidadeInput">Validade:</label>
+                <input id="certValidadeInput" type="date" readonly />
+              </div>
+              <p id="certMessage" class="message"></p>
+            </div>
+          </details>
+
+          <!-- Dados da empresa -->
+          <form id="companyForm" class="form-grid company-grid-form">
+            <label for="companyNameInput">Razao social:</label>
+            <input id="companyNameInput" type="text" placeholder="Nome da empresa" required />
+
+            <label for="companyCnpjInput">CNPJ:</label>
+            <input id="companyCnpjInput" type="text" placeholder="00.000.000/0000-00" maxlength="18" required />
+
+            <label for="companyCepInput">CEP:</label>
+            <input id="companyCepInput" type="text" placeholder="00000-000" maxlength="9" />
+
+            <label for="companyStreetInput">Endereco:</label>
+            <input id="companyStreetInput" type="text" placeholder="Rua, numero, bairro" />
+
+            <label for="companyCityInput">Cidade:</label>
+            <input id="companyCityInput" type="text" placeholder="Cidade" />
+
+            <label for="companyStateInput">Estado:</label>
+            <input id="companyStateInput" type="text" placeholder="UF" maxlength="2" />
+          </form>
+          <p id="companyFormMessage" class="message"></p>
+        </div>
+
+        <div class="company-modal-actions">
+          <button id="cancelCompanyModalBtn" type="button" class="secondary">Cancelar</button>
+          <button id="saveCompanyBtn" type="button">Salvar</button>
+        </div>
+      </div>
+    </div>
 
     <script src="/empresas.js"></script>
     <script src="/navbar.js"></script>

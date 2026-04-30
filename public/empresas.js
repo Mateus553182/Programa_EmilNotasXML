@@ -1,12 +1,22 @@
 const TOKEN_KEY = 'emil_notas_token';
 
-const planLabel = document.getElementById('planLabel');
+let authToken = localStorage.getItem(TOKEN_KEY) || '';
+let allCompanies = [];
+let editingCompanyId = null;
+
+// DOM refs
 const planUsageHint = document.getElementById('planUsageHint');
+const companiesBody = document.getElementById('companiesBody');
+const companySearchInput = document.getElementById('companySearchInput');
+const fabAddCompany = document.getElementById('fabAddCompany');
+
+const companyModal = document.getElementById('companyModal');
+const companyModalTitle = document.getElementById('companyModalTitle');
 const companyForm = document.getElementById('companyForm');
 const companyFormMessage = document.getElementById('companyFormMessage');
-const createCompanyBtn = document.getElementById('createCompanyBtn');
-const refreshCompanies = document.getElementById('refreshCompanies');
-const companiesBody = document.getElementById('companiesBody');
+const saveCompanyBtn = document.getElementById('saveCompanyBtn');
+const closeCompanyModalBtn = document.getElementById('closeCompanyModalBtn');
+const cancelCompanyModalBtn = document.getElementById('cancelCompanyModalBtn');
 
 const companyNameInput = document.getElementById('companyNameInput');
 const companyCnpjInput = document.getElementById('companyCnpjInput');
@@ -24,21 +34,15 @@ const certExtractedInfo = document.getElementById('certExtractedInfo');
 const certValidadeInput = document.getElementById('certValidadeInput');
 const certMessage = document.getElementById('certMessage');
 
-let authToken = localStorage.getItem(TOKEN_KEY) || '';
-let planMeta = { companyLimit: null };
-
+// ---- Auth helpers ----
 function forceLogin() {
   authToken = '';
   localStorage.removeItem(TOKEN_KEY);
   window.location.href = '/login';
 }
 
-function getAuthHeaders(extraHeaders = {}) {
-  if (!authToken) return extraHeaders;
-  return {
-    ...extraHeaders,
-    Authorization: `Bearer ${authToken}`,
-  };
+function getAuthHeaders(extra = {}) {
+  return authToken ? { ...extra, Authorization: `Bearer ${authToken}` } : extra;
 }
 
 async function request(url, options = {}) {
@@ -48,11 +52,7 @@ async function request(url, options = {}) {
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      forceLogin();
-      throw new Error('Sessao expirada. Faca login novamente.');
-    }
-
+    if (response.status === 401) { forceLogin(); throw new Error('Sessao expirada.'); }
     const body = await response.json().catch(() => ({}));
     throw new Error(body.message || body.error || 'Falha na requisicao');
   }
@@ -61,91 +61,145 @@ async function request(url, options = {}) {
   return response.json();
 }
 
-function normalizeDigits(value) {
-  return String(value || '').replace(/\D/g, '');
+// ---- Formatters ----
+function normalizeDigits(v) { return String(v || '').replace(/\D/g, ''); }
+
+function formatCnpj(v) {
+  let d = normalizeDigits(v).slice(0, 14);
+  if (d.length > 12) d = d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+  else if (d.length > 8) d = d.replace(/(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
+  else if (d.length > 5) d = d.replace(/(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  else if (d.length > 2) d = d.replace(/(\d{2})(\d{1,3})/, '$1.$2');
+  return d;
 }
 
-function formatCnpj(value) {
-  let digits = normalizeDigits(value).slice(0, 14);
-  if (digits.length > 12) digits = digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
-  else if (digits.length > 8) digits = digits.replace(/(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
-  else if (digits.length > 5) digits = digits.replace(/(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
-  else if (digits.length > 2) digits = digits.replace(/(\d{2})(\d{1,3})/, '$1.$2');
-  return digits;
+function formatCep(v) {
+  let d = normalizeDigits(v).slice(0, 8);
+  if (d.length > 5) d = d.replace(/(\d{5})(\d{1,3})/, '$1-$2');
+  return d;
 }
 
-function formatCep(value) {
-  let digits = normalizeDigits(value).slice(0, 8);
-  if (digits.length > 5) digits = digits.replace(/(\d{5})(\d{1,3})/, '$1-$2');
-  return digits;
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('pt-BR');
-}
-
-function updatePlanSummary(data) {
-  planMeta = data.plan || { companyLimit: null };
-
-  const limitText = Number.isFinite(planMeta.companyLimit)
-    ? `${planMeta.companyLimit} empresa(s)`
-    : 'Empresas ilimitadas';
-
-  planLabel.textContent = `${planMeta.label || '-'} - ${limitText}`;
-
-  const current = data.usage && Number.isFinite(data.usage.companies) ? data.usage.companies : 0;
-  planUsageHint.textContent = Number.isFinite(planMeta.companyLimit)
-    ? `${current} de ${planMeta.companyLimit} empresa(s) cadastrada(s).`
-    : `${current} empresa(s) cadastrada(s) sem limite no plano.`;
-
-  const canCreate = Boolean(data.canAddCompany);
-  createCompanyBtn.disabled = !canCreate;
-  if (!canCreate) {
-    companyFormMessage.style.color = 'var(--danger)';
-    companyFormMessage.textContent = 'Limite de empresas do plano atingido.';
-  } else if (companyFormMessage.textContent === 'Limite de empresas do plano atingido.') {
-    companyFormMessage.textContent = '';
-  }
-}
-
-function renderPrincipalCompany(company) {
-  if (!company) {
-    companiesBody.innerHTML = '<tr><td colspan="5">Nenhuma empresa principal cadastrada.</td></tr>';
+// ---- Render table ----
+function renderTable(companies) {
+  if (!companies.length) {
+    companiesBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhuma empresa cadastrada.</td></tr>';
     return;
   }
 
   companiesBody.innerHTML = '';
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${company.name || '-'}</td>
-    <td>${formatCnpj(company.cnpj || '') || '-'}</td>
-    <td>${company.code || '-'}</td>
-    <td>${[(company.address && company.address.city) || '', (company.address && company.address.state) || ''].filter(Boolean).join('/') || '-'}</td>
-    <td>${formatDate(company.createdAt)}</td>
-  `;
-  companiesBody.appendChild(tr);
+  companies.forEach((company) => {
+    const tr = document.createElement('tr');
+
+    const cityState = [
+      (company.address && company.address.city) || '',
+      (company.address && company.address.state) || '',
+    ].filter(Boolean).join('/') || '-';
+
+    tr.innerHTML = `
+      <td class="col-action-btn">
+        <button class="btn-icon btn-edit" data-id="${company.id}" title="Editar">&#9998;</button>
+      </td>
+      <td class="col-action-btn">
+        <button class="btn-icon btn-delete" data-id="${company.id}" title="Excluir">&#128465;</button>
+      </td>
+      <td>${company.code || '-'}</td>
+      <td>${company.name || '-'}</td>
+      <td>${formatCnpj(company.cnpj || '') || '-'}</td>
+      <td>${cityState}</td>
+    `;
+
+    tr.querySelector('.btn-edit').addEventListener('click', () => openEditModal(company));
+    tr.querySelector('.btn-delete').addEventListener('click', () => confirmDelete(company));
+
+    companiesBody.appendChild(tr);
+  });
 }
 
+// ---- Load data ----
 async function loadCompanies() {
-  companiesBody.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
-  const data = await request('/api/empresas/me');
-  updatePlanSummary(data);
+  companiesBody.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
 
-  const principal = data.principal || data.principalCompany || null;
-  renderPrincipalCompany(principal);
+  try {
+    const data = await request('/api/empresas/me');
+    const plan = data.plan || {};
+    const usage = (data.usage && data.usage.companies) || 0;
 
-  if (principal) {
-    createCompanyBtn.disabled = true;
-    companyFormMessage.style.color = 'var(--muted)';
-    companyFormMessage.textContent = 'Empresa principal ja cadastrada. Use Empresas secundarias para novos cadastros.';
+    if (Number.isFinite(plan.companyLimit)) {
+      planUsageHint.textContent = `Plano ${plan.label || '-'} · ${usage} de ${plan.companyLimit} empresa(s) cadastrada(s).`;
+    } else {
+      planUsageHint.textContent = `Plano ${plan.label || '-'} · ${usage} empresa(s) cadastrada(s).`;
+    }
+
+    allCompanies = Array.isArray(data.companies) ? data.companies : [];
+    applySearch();
+  } catch (error) {
+    companiesBody.innerHTML = `<tr><td colspan="6" style="color:var(--danger)">${error.message}</td></tr>`;
   }
 }
 
+function applySearch() {
+  const q = (companySearchInput.value || '').toLowerCase().trim();
+  const filtered = q
+    ? allCompanies.filter((c) =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.cnpj || '').includes(q) ||
+        (c.code || '').toLowerCase().includes(q)
+      )
+    : allCompanies;
+  renderTable(filtered);
+}
+
+companySearchInput.addEventListener('input', applySearch);
+
+// ---- Modal helpers ----
+function openModal() { companyModal.classList.remove('hidden'); }
+function closeModal() {
+  companyModal.classList.add('hidden');
+  editingCompanyId = null;
+  companyForm.reset();
+  companyCepInput.classList.remove('cep-loading', 'cep-ok', 'cep-error');
+  companyFormMessage.textContent = '';
+  companyNameInput.readOnly = false;
+  companyCnpjInput.readOnly = false;
+  companyNameInput.classList.remove('cert-locked');
+  companyCnpjInput.classList.remove('cert-locked');
+  certFileInput.value = '';
+  certFileName.textContent = '';
+  certPasswordInput.value = '';
+  certExtractedInfo.value = '';
+  certValidadeInput.value = '';
+  certMessage.textContent = '';
+  document.getElementById('certSection').removeAttribute('open');
+}
+
+function openCreateModal() {
+  editingCompanyId = null;
+  companyModalTitle.textContent = 'Nova empresa';
+  openModal();
+}
+
+function openEditModal(company) {
+  editingCompanyId = company.id;
+  companyModalTitle.textContent = 'Editar empresa';
+
+  companyNameInput.value = company.name || '';
+  companyCnpjInput.value = formatCnpj(company.cnpj || '');
+  companyCepInput.value = formatCep((company.address && company.address.cep) || '');
+  companyStreetInput.value = (company.address && company.address.street) || '';
+  companyCityInput.value = (company.address && company.address.city) || '';
+  companyStateInput.value = (company.address && company.address.state) || '';
+
+  openModal();
+}
+
+fabAddCompany.addEventListener('click', openCreateModal);
+closeCompanyModalBtn.addEventListener('click', closeModal);
+cancelCompanyModalBtn.addEventListener('click', closeModal);
+companyModal.addEventListener('click', (e) => { if (e.target === companyModal) closeModal(); });
+
+// ---- CEP auto-fill ----
 async function fetchAddressFromCep(digits) {
   companyCepInput.classList.add('cep-loading');
-
   try {
     const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
     const data = await response.json();
@@ -159,7 +213,6 @@ async function fetchAddressFromCep(digits) {
     companyStreetInput.value = [data.logradouro, data.bairro].filter(Boolean).join(', ');
     companyCityInput.value = data.localidade || '';
     companyStateInput.value = data.uf || '';
-
     companyCepInput.classList.remove('cep-loading', 'cep-error');
     companyCepInput.classList.add('cep-ok');
   } catch {
@@ -168,20 +221,31 @@ async function fetchAddressFromCep(digits) {
   }
 }
 
-function lockCertField(input) {
-  if (!input) return;
-  input.readOnly = true;
-  input.classList.add('cert-locked');
-  input.title = 'Preenchido automaticamente pelo certificado digital';
-}
+companyCnpjInput.addEventListener('input', () => { companyCnpjInput.value = formatCnpj(companyCnpjInput.value); });
+companyCepInput.addEventListener('input', () => {
+  companyCepInput.value = formatCep(companyCepInput.value);
+  const digits = normalizeDigits(companyCepInput.value);
+  if (digits.length === 8) fetchAddressFromCep(digits);
+  if (digits.length < 8) companyCepInput.classList.remove('cep-loading', 'cep-ok', 'cep-error');
+});
 
-function clearCertificateState() {
-  certExtractedInfo.value = '';
-  certValidadeInput.value = '';
-  certMessage.textContent = '';
-}
+// ---- Certificate extraction ----
+certUploadArea.addEventListener('click', () => certFileInput.click());
+certUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); certUploadArea.classList.add('drag-over'); });
+certUploadArea.addEventListener('dragleave', () => certUploadArea.classList.remove('drag-over'));
+certUploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  certUploadArea.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) {
+    certFileInput.files = e.dataTransfer.files;
+    certFileName.textContent = e.dataTransfer.files[0].name;
+  }
+});
+certFileInput.addEventListener('change', () => {
+  if (certFileInput.files[0]) certFileName.textContent = certFileInput.files[0].name;
+});
 
-async function extractCertificateData() {
+certExtractBtn.addEventListener('click', async () => {
   const certFile = certFileInput.files[0];
   const certPassword = certPasswordInput.value.trim();
 
@@ -190,15 +254,14 @@ async function extractCertificateData() {
     certMessage.textContent = 'Selecione um certificado .pfx/.p12.';
     return;
   }
-
   if (!certPassword) {
     certMessage.style.color = 'var(--danger)';
-    certMessage.textContent = 'Informe a senha do certificado para extrair os dados.';
+    certMessage.textContent = 'Informe a senha do certificado.';
     return;
   }
 
   certMessage.style.color = 'var(--muted)';
-  certMessage.textContent = 'Extraindo dados do certificado...';
+  certMessage.textContent = 'Extraindo dados...';
 
   const formData = new FormData();
   formData.append('certificado', certFile);
@@ -210,163 +273,90 @@ async function extractCertificateData() {
       headers: { Authorization: `Bearer ${authToken}` },
       body: formData,
     });
-
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.error || 'Nao foi possivel extrair dados do certificado.');
-    }
+    if (!response.ok) throw new Error(data.error || 'Falha ao extrair dados.');
 
     const cert = data.certificate || {};
-    const summary = [
+    certExtractedInfo.value = [
       cert.cnpjFormatted ? `CNPJ: ${cert.cnpjFormatted}` : null,
       cert.companyName ? `Empresa: ${cert.companyName}` : null,
-    ].filter(Boolean).join(' | ');
+    ].filter(Boolean).join(' | ') || 'Nao identificado';
 
-    certExtractedInfo.value = summary || 'Nao identificado';
-
-    if (cert.validTo) {
-      certValidadeInput.value = String(cert.validTo).slice(0, 10);
-    }
+    if (cert.validTo) certValidadeInput.value = String(cert.validTo).slice(0, 10);
 
     if (cert.companyName && !companyNameInput.value.trim()) {
       companyNameInput.value = cert.companyName;
-      lockCertField(companyNameInput);
+      companyNameInput.readOnly = true;
+      companyNameInput.classList.add('cert-locked');
     }
-
     if (cert.cnpjFormatted && !companyCnpjInput.value.trim()) {
       companyCnpjInput.value = cert.cnpjFormatted;
-      lockCertField(companyCnpjInput);
+      companyCnpjInput.readOnly = true;
+      companyCnpjInput.classList.add('cert-locked');
     }
 
     certMessage.style.color = '#2e9e6a';
-    certMessage.textContent = 'Dados extraidos com sucesso. Confira o formulario abaixo.';
+    certMessage.textContent = 'Dados extraidos com sucesso. Confira abaixo.';
   } catch (error) {
     certExtractedInfo.value = 'Nao identificado';
-    certValidadeInput.value = '';
     certMessage.style.color = 'var(--danger)';
     certMessage.textContent = error.message;
   }
-}
-
-companyCnpjInput.addEventListener('input', () => {
-  companyCnpjInput.value = formatCnpj(companyCnpjInput.value);
 });
 
-companyCepInput.addEventListener('input', () => {
-  companyCepInput.value = formatCep(companyCepInput.value);
-  const digits = normalizeDigits(companyCepInput.value);
-  if (digits.length === 8) {
-    fetchAddressFromCep(digits);
-  }
-});
-
-companyForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  if (Number.isFinite(planMeta.companyLimit) && createCompanyBtn.disabled) {
-    companyFormMessage.style.color = 'var(--danger)';
-    companyFormMessage.textContent = 'Limite de empresas do plano atingido.';
-    return;
-  }
+// ---- Save (create or update) ----
+saveCompanyBtn.addEventListener('click', async () => {
+  if (!companyForm.reportValidity()) return;
 
   companyFormMessage.style.color = 'var(--muted)';
-  companyFormMessage.textContent = 'Salvando empresa...';
+  companyFormMessage.textContent = 'Salvando...';
+  saveCompanyBtn.disabled = true;
+
+  const payload = {
+    name: companyNameInput.value.trim(),
+    cnpj: companyCnpjInput.value.trim(),
+    cep: companyCepInput.value.trim(),
+    street: companyStreetInput.value.trim(),
+    city: companyCityInput.value.trim(),
+    state: companyStateInput.value.trim().toUpperCase(),
+  };
 
   try {
-    const payload = {
-      kind: 'principal',
-      name: companyNameInput.value.trim(),
-      cnpj: companyCnpjInput.value.trim(),
-      cep: companyCepInput.value.trim(),
-      street: companyStreetInput.value.trim(),
-      city: companyCityInput.value.trim(),
-      state: companyStateInput.value.trim().toUpperCase(),
-    };
+    if (editingCompanyId) {
+      await request(`/api/empresas/${editingCompanyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await request('/api/empresas/me', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    }
 
-    const data = await request('/api/empresas/principal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    companyForm.reset();
-    companyCepInput.classList.remove('cep-loading', 'cep-ok', 'cep-error');
-    companyNameInput.readOnly = false;
-    companyCnpjInput.readOnly = false;
-    companyNameInput.classList.remove('cert-locked');
-    companyCnpjInput.classList.remove('cert-locked');
-    companyNameInput.title = '';
-    companyCnpjInput.title = '';
-    clearCertificateState();
-    certFileInput.value = '';
-    certPasswordInput.value = '';
-    certFileName.textContent = '';
-
-    companyFormMessage.style.color = '#2e9e6a';
-    companyFormMessage.textContent = `${data.message} Codigo de acesso: ${data.company.code}`;
-
+    closeModal();
     await loadCompanies();
   } catch (error) {
     companyFormMessage.style.color = 'var(--danger)';
     companyFormMessage.textContent = error.message;
+  } finally {
+    saveCompanyBtn.disabled = false;
   }
 });
 
-refreshCompanies.addEventListener('click', async () => {
-  companyFormMessage.textContent = '';
-  await loadCompanies();
-});
-
-certUploadArea.addEventListener('click', () => certFileInput.click());
-certUploadArea.addEventListener('dragover', (event) => {
-  event.preventDefault();
-  certUploadArea.classList.add('drag-over');
-});
-certUploadArea.addEventListener('dragleave', () => {
-  certUploadArea.classList.remove('drag-over');
-});
-certUploadArea.addEventListener('drop', (event) => {
-  event.preventDefault();
-  certUploadArea.classList.remove('drag-over');
-  if (event.dataTransfer.files.length) {
-    certFileInput.files = event.dataTransfer.files;
-    certFileName.textContent = `Arquivo selecionado: ${event.dataTransfer.files[0].name}`;
-    certMessage.style.color = 'var(--muted)';
-    certMessage.textContent = 'Arquivo selecionado. Informe a senha e clique em Extrair dados do certificado.';
-  }
-});
-
-certFileInput.addEventListener('change', () => {
-  if (certFileInput.files[0]) {
-    certFileName.textContent = `Arquivo selecionado: ${certFileInput.files[0].name}`;
-    certMessage.style.color = 'var(--muted)';
-    certMessage.textContent = 'Arquivo selecionado. Informe a senha e clique em Extrair dados do certificado.';
-  } else {
-    certFileName.textContent = '';
-    clearCertificateState();
-  }
-});
-
-certPasswordInput.addEventListener('input', () => {
-  if (certMessage.style.color !== 'rgb(46, 158, 106)') {
-    certMessage.textContent = '';
-  }
-});
-
-certExtractBtn.addEventListener('click', extractCertificateData);
-
-async function bootstrap() {
-  if (!authToken) {
-    forceLogin();
-    return;
-  }
+// ---- Delete ----
+async function confirmDelete(company) {
+  if (!window.confirm(`Excluir a empresa "${company.name}"? Esta acao nao pode ser desfeita.`)) return;
 
   try {
-    await request('/api/auth/me');
+    await request(`/api/empresas/${company.id}`, { method: 'DELETE' });
     await loadCompanies();
-  } catch {
-    forceLogin();
+  } catch (error) {
+    alert(error.message);
   }
 }
 
-bootstrap();
+// ---- Init ----
+loadCompanies();

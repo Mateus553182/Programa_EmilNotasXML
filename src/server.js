@@ -462,6 +462,59 @@ app.delete('/api/empresas/secundarias/:id', authMiddleware, async (req, res) => 
   return res.status(204).send();
 });
 
+// Rotas unificadas (sem distinção principal/secundária)
+app.put('/api/empresas/:id', authMiddleware, async (req, res) => {
+  const { registry, currentUser } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const ownedIds = Array.isArray(currentUser.companyIds) ? currentUser.companyIds : [];
+  const company = registry.companies.find(
+    (item) => item.id === req.params.id && item.active !== false && ownedIds.includes(item.id)
+  ) || null;
+
+  if (!company) {
+    return res.status(404).json({ message: 'Empresa nao encontrada.' });
+  }
+
+  const duplicateCnpj = registry.companies.find(
+    (item) => item.id !== company.id && item.active !== false && normalizeDigits(item.cnpj) === normalizeDigits(req.body && req.body.cnpj)
+  );
+  if (duplicateCnpj) {
+    return res.status(409).json({ message: 'Este CNPJ ja esta cadastrado.' });
+  }
+
+  const result = updateCompanyFromPayload(company, req.body || {});
+  if (result.error) {
+    return res.status(400).json({ message: result.error });
+  }
+
+  await writeCompanyRegistry(registry);
+  return res.json({ message: 'Empresa atualizada com sucesso.', company: mapCompanyForResponse(company, company.kind || 'secundaria') });
+});
+
+app.delete('/api/empresas/:id', authMiddleware, async (req, res) => {
+  const { registry, currentUser } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario da sessao nao encontrado.' });
+  }
+
+  const ownedIds = Array.isArray(currentUser.companyIds) ? currentUser.companyIds : [];
+  const company = registry.companies.find(
+    (item) => item.id === req.params.id && item.active !== false && ownedIds.includes(item.id)
+  ) || null;
+
+  if (!company) {
+    return res.status(404).json({ message: 'Empresa nao encontrada.' });
+  }
+
+  company.active = false;
+  currentUser.companyIds = ownedIds.filter((id) => id !== company.id);
+  await writeCompanyRegistry(registry);
+  return res.status(204).send();
+});
+
 app.post('/api/auth/logout', authMiddleware, (req, res) => {
   const token = getBearerToken(req);
   logoutSession(token);
