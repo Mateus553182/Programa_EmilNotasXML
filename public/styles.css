@@ -439,7 +439,7 @@ td.actions button.delete {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .page-footer {
