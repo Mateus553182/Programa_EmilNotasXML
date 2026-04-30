@@ -163,10 +163,12 @@ companySearchInput.addEventListener('input', applySearch);
 let canOpenModal = false; // Flag para controlar abertura do modal
 function openModal() { 
   if (!canOpenModal) return; // Apenas abre se foi explicitamente permitido
-  companyModal.classList.remove('hidden'); 
+  companyModal.classList.remove('hidden');
+  fabAddCompany.style.display = 'none';
 }
 function closeModal() {
   companyModal.classList.add('hidden');
+  fabAddCompany.style.display = '';
   editingCompanyId = null;
   companyForm.reset();
   companyCepInput.classList.remove('cep-loading', 'cep-ok', 'cep-error');
@@ -203,8 +205,9 @@ function openEditModal(company) {
   companyStreetInput.value = (company.address && company.address.street) || '';
   companyCityInput.value = (company.address && company.address.city) || '';
   companyStateInput.value = (company.address && company.address.state) || '';
+  certValidadeInput.value = company.certValidTo ? String(company.certValidTo).slice(0, 10) : '';
 
-  // Show current certificate info if available
+  // Always show certificate section when editing.
   if (company.certValidTo) {
     const validDate = new Date(company.certValidTo);
     const today = new Date();
@@ -224,7 +227,8 @@ function openEditModal(company) {
     currentCertInfo.innerHTML = `<strong>Válido até:</strong> ${validDate.toLocaleDateString('pt-BR')} <span style="color:${statusColor};">${status}</span>`;
     currentCertSection.style.display = 'block';
   } else {
-    currentCertSection.style.display = 'none';
+    currentCertInfo.innerHTML = '<strong>Certificado atual:</strong> Nenhum certificado cadastrado para esta empresa.';
+    currentCertSection.style.display = 'block';
   }
 
   openModal();
