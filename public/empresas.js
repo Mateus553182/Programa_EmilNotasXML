@@ -157,7 +157,11 @@ function applySearch() {
 companySearchInput.addEventListener('input', applySearch);
 
 // ---- Modal helpers ----
-function openModal() { companyModal.classList.remove('hidden'); }
+let canOpenModal = false; // Flag para controlar abertura do modal
+function openModal() { 
+  if (!canOpenModal) return; // Apenas abre se foi explicitamente permitido
+  companyModal.classList.remove('hidden'); 
+}
 function closeModal() {
   companyModal.classList.add('hidden');
   editingCompanyId = null;
@@ -176,12 +180,15 @@ function closeModal() {
 }
 
 function openCreateModal() {
+  canOpenModal = true;
   editingCompanyId = null;
   companyModalTitle.textContent = 'Nova empresa';
   openModal();
+  canOpenModal = false;
 }
 
 function openEditModal(company) {
+  canOpenModal = true;
   editingCompanyId = company.id;
   companyModalTitle.textContent = 'Editar empresa';
 
@@ -193,6 +200,7 @@ function openEditModal(company) {
   companyStateInput.value = (company.address && company.address.state) || '';
 
   openModal();
+  canOpenModal = false;
 }
 
 fabAddCompany.addEventListener('click', openCreateModal);
