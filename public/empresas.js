@@ -30,7 +30,6 @@ const certFileInput = document.getElementById('certFileInput');
 const certFileName = document.getElementById('certFileName');
 const certPasswordInput = document.getElementById('certPasswordInput');
 const certExtractBtn = document.getElementById('certExtractBtn');
-const certExtractedInfo = document.getElementById('certExtractedInfo');
 const certValidadeInput = document.getElementById('certValidadeInput');
 const certMessage = document.getElementById('certMessage');
 
@@ -166,10 +165,8 @@ function closeModal() {
   certFileInput.value = '';
   certFileName.textContent = '';
   certPasswordInput.value = '';
-  certExtractedInfo.value = '';
   certValidadeInput.value = '';
   certMessage.textContent = '';
-  document.getElementById('certSection').removeAttribute('open');
 }
 
 function openCreateModal() {
@@ -277,12 +274,33 @@ certExtractBtn.addEventListener('click', async () => {
     if (!response.ok) throw new Error(data.error || 'Falha ao extrair dados.');
 
     const cert = data.certificate || {};
-    certExtractedInfo.value = [
-      cert.cnpjFormatted ? `CNPJ: ${cert.cnpjFormatted}` : null,
-      cert.companyName ? `Empresa: ${cert.companyName}` : null,
-    ].filter(Boolean).join(' | ') || 'Nao identificado';
 
-    if (cert.validTo) certValidadeInput.value = String(cert.validTo).slice(0, 10);
+    if (cert.validTo) {
+      const validDate = new Date(cert.validTo);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (validDate < today) {
+        certMessage.style.color = 'var(--danger)';
+        certMessage.textContent = `Certificado vencido em ${validDate.toLocaleDateString('pt-BR')}. Atualize o certificado antes de prosseguir.`;
+        certValidadeInput.value = '';
+        return;
+      }
+
+      certValidadeInput.value = String(cert.validTo).slice(0, 10);
+
+      const daysLeft = Math.ceil((validDate - today) / (1000 * 60 * 60 * 24));
+      if (daysLeft <= 30) {
+        certMessage.style.color = '#b87500';
+        certMessage.textContent = `Atenção: certificado vence em ${daysLeft} dia${daysLeft === 1 ? '' : 's'} (${validDate.toLocaleDateString('pt-BR')}). Renove em breve.`;
+      } else {
+        certMessage.style.color = '#2e9e6a';
+        certMessage.textContent = 'Dados extraidos com sucesso. Confira abaixo.';
+      }
+    } else {
+      certMessage.style.color = '#2e9e6a';
+      certMessage.textContent = 'Dados extraidos com sucesso. Confira abaixo.';
+    }
 
     if (cert.companyName && !companyNameInput.value.trim()) {
       companyNameInput.value = cert.companyName;
@@ -295,10 +313,7 @@ certExtractBtn.addEventListener('click', async () => {
       companyCnpjInput.classList.add('cert-locked');
     }
 
-    certMessage.style.color = '#2e9e6a';
-    certMessage.textContent = 'Dados extraidos com sucesso. Confira abaixo.';
   } catch (error) {
-    certExtractedInfo.value = 'Nao identificado';
     certMessage.style.color = 'var(--danger)';
     certMessage.textContent = error.message;
   }

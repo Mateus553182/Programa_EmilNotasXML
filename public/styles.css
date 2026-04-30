@@ -1029,29 +1029,18 @@ input.cep-error {
   max-height: calc(90vh - 140px);
 }
 
-/* Certificate collapsible inside modal */
-.cert-collapsible {
+/* Certificate section inside modal (mandatory) */
+.cert-section {
   border: 1px solid #dee2e6;
   border-radius: 6px;
   margin-bottom: 1rem;
-  padding: .5rem .75rem;
+  padding: .5rem .75rem .75rem;
 }
-.cert-collapsible summary {
-  cursor: pointer;
-  font-weight: 600;
+.cert-section-title {
   font-size: .95rem;
+  font-weight: 600;
   color: #444c5a;
-  user-select: none;
-  list-style: none;
-  padding: .25rem 0;
-}
-.cert-hint-badge {
-  font-weight: 400;
-  font-size: .8rem;
-  color: #888;
-}
-.cert-collapsible[open] summary {
-  margin-bottom: .75rem;
+  margin: .25rem 0 .75rem;
 }
 .upload-area-sm {
   min-height: 80px;

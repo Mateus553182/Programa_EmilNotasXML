@@ -105,9 +105,9 @@
         </div>
 
         <div class="company-modal-body">
-          <!-- Certificado digital (opcional) -->
-          <details class="cert-collapsible" id="certSection">
-            <summary>Certificado digital <span class="cert-hint-badge">(opcional)</span></summary>
+          <!-- Certificado digital (obrigatório) -->
+          <div class="cert-section" id="certSection">
+            <h3 class="cert-section-title">Certificado digital</h3>
             <div class="certificado-upload modal-cert-upload">
               <div class="upload-area upload-area-sm" id="certUploadArea">
                 <span class="upload-icon">&#128274;</span>
@@ -121,14 +121,12 @@
                   <input id="certPasswordInput" type="password" placeholder="Senha do certificado" />
                   <button id="certExtractBtn" type="button" class="secondary">Extrair</button>
                 </div>
-                <label for="certExtractedInfo">Dados extraídos:</label>
-                <input id="certExtractedInfo" type="text" placeholder="—" readonly />
                 <label for="certValidadeInput">Validade:</label>
                 <input id="certValidadeInput" type="date" readonly />
               </div>
               <p id="certMessage" class="message"></p>
             </div>
-          </details>
+          </div>
 
           <!-- Dados da empresa -->
           <form id="companyForm" class="form-grid company-grid-form">
