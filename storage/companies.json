@@ -1,7 +1,30 @@
 {
-  "companies": [],
+  "companies": [
+    {
+      "id": "49cca245-9e11-4cc1-ae52-e84d0607d6a1",
+      "code": "494431",
+      "name": "VESPER COMERCIO DE PECAS E MANUTENCAO LTDA",
+      "cnpj": "29866560000105",
+      "address": {
+        "cep": "13801-057",
+        "street": "Rua Ademir Ruiz, Jardim Itapema",
+        "city": "Mogi Mirim",
+        "state": "SP"
+      },
+      "userIds": [
+        "user-teste-001"
+      ],
+      "masterUserId": "user-teste-001",
+      "active": true,
+      "createdAt": "2026-04-28T18:40:11.200Z"
+    }
+  ],
   "users": [
     {
+      "active": true,
+      "companyIds": [
+        "49cca245-9e11-4cc1-ae52-e84d0607d6a1"
+      ],
       "id": "user-teste-001",
       "name": "João Teste",
       "username": "joao@teste.com",
@@ -16,8 +39,6 @@
         "companyLimit": 5,
         "userLimit": 8
       },
-      "companyIds": [],
-      "active": true,
       "createdAt": "2026-04-28T00:00:00.000Z"
     }
   ]
