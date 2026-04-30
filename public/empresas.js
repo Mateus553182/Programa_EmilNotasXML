@@ -11,8 +11,10 @@ const companySearchInput = document.getElementById('companySearchInput');
 const fabAddCompany = document.getElementById('fabAddCompany');
 
 const companyModal = document.getElementById('companyModal');
-// Ensure modal is hidden on initial load
-if (companyModal) companyModal.classList.add('hidden');
+// Ensure modal is hidden on initial load and remove any conflicting classes
+if (companyModal) {
+  companyModal.className = 'company-modal-backdrop hidden';
+}
 const companyModalTitle = document.getElementById('companyModalTitle');
 const companyForm = document.getElementById('companyForm');
 const companyFormMessage = document.getElementById('companyFormMessage');
@@ -133,6 +135,8 @@ async function loadCompanies() {
 
     allCompanies = Array.isArray(data.companies) ? data.companies : [];
     applySearch();
+    // Ensure modal stays hidden
+    if (companyModal) companyModal.classList.add('hidden');
   } catch (error) {
     companiesBody.innerHTML = `<tr><td colspan="6" style="color:var(--danger)">${error.message}</td></tr>`;
   }
