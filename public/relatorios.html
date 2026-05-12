@@ -61,122 +61,279 @@
       </div>
     </nav>
 
-    <main class="container">
-      <section class="card report-shell">
-        <div class="report-head">
-          <div>
-            <h2>Relatorio de Notas Fiscais</h2>
-            <p class="subtitle-auth">Visao moderna dos documentos fiscais com filtros por empresa.</p>
+    <main class="container xrl-page">
+      <section class="xrl-layout">
+        <aside class="xrl-sidebar is-collapsed" id="xrlSidebar">
+          <div class="xrl-sidebar-top">
+            <button id="xrlSidebarToggle" class="xrl-hamburger" type="button" aria-label="Abrir menu" aria-expanded="false">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <div class="xrl-brand-copy">
+              <small>Controle fiscal inteligente</small>
+              <strong>Relatorios XML</strong>
+            </div>
           </div>
-          <button id="btnAtualizarRelatorio" type="button" class="secondary">Sincronizar agora</button>
+
+          <nav class="xrl-menu" aria-label="Menu de relatorios">
+            <button type="button" class="xrl-menu-item is-active" data-xrl-view="dashboardView">
+              <span class="xrl-menu-icon">▣</span>
+              <span class="xrl-menu-text">Dashboard</span>
+            </button>
+            <button type="button" class="xrl-menu-item" data-xrl-view="notesView">
+              <span class="xrl-menu-icon">☰</span>
+              <span class="xrl-menu-text">Notas</span>
+            </button>
+          </nav>
+        </aside>
+
+        <section class="xrl-content">
+          <header class="card xrl-topbar">
+            <div class="xrl-topbar-grid">
+              <div class="xrl-field">
+                <label for="xrlCompanySelect">Empresa selecionada</label>
+                <select id="xrlCompanySelect"></select>
+              </div>
+              <div class="xrl-field">
+                <label for="xrlPeriodPreset">Periodo</label>
+                <select id="xrlPeriodPreset">
+                  <option value="mes-atual">Mes atual</option>
+                  <option value="7d">Ultimos 7 dias</option>
+                  <option value="30d">Ultimos 30 dias</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+              </div>
+              <div class="xrl-field xrl-field-search">
+                <label for="xrlGlobalSearch">Busca inteligente</label>
+                <input id="xrlGlobalSearch" type="search" placeholder="Buscar por CNPJ, fornecedor, chave, produto, valor..." />
+              </div>
+            </div>
+            <div class="xrl-custom-range hidden" id="xrlCustomRange">
+              <div class="xrl-field">
+                <label for="xrlFromDate">De</label>
+                <input id="xrlFromDate" type="date" />
+              </div>
+              <div class="xrl-field">
+                <label for="xrlToDate">Ate</label>
+                <input id="xrlToDate" type="date" />
+              </div>
+            </div>
+          </header>
+
+          <section id="dashboardView" class="xrl-view is-active" data-xrl-panel>
+            <div class="xrl-kpis">
+              <article class="card xrl-kpi">
+                <span>Notas do mes</span>
+                <strong id="xrlKpiMonthCount">0</strong>
+              </article>
+              <article class="card xrl-kpi">
+                <span>Valor total</span>
+                <strong id="xrlKpiTotalValue">R$ 0,00</strong>
+              </article>
+              <article class="card xrl-kpi">
+                <span>Pendentes</span>
+                <strong id="xrlKpiPending">0</strong>
+              </article>
+              <article class="card xrl-kpi">
+                <span>Rejeitadas</span>
+                <strong id="xrlKpiRejected">0</strong>
+              </article>
+            </div>
+
+            <section class="card xrl-block">
+              <div class="table-header">
+                <h2>Notas emitidas por dia</h2>
+              </div>
+              <div id="xrlDailyChart" class="xrl-daily-chart"></div>
+            </section>
+
+            <div class="xrl-dashboard-grid">
+              <section class="card xrl-block">
+                <div class="table-header">
+                  <h2>Top fornecedores</h2>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Fornecedor</th>
+                        <th>Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody id="xrlTopSuppliersBody"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="card xrl-block">
+                <div class="table-header">
+                  <h2>Ultimas notas</h2>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>N NF</th>
+                        <th>Fornecedor</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                      </tr>
+                    </thead>
+                    <tbody id="xrlRecentNotesBody"></tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section id="notesView" class="xrl-view" data-xrl-panel hidden>
+            <section class="card xrl-block">
+              <div class="xrl-title-actions">
+                <div>
+                  <h2>Notas Fiscais</h2>
+                  <p class="subtitle-auth">Tabela profissional com filtros avancados.</p>
+                </div>
+                <div class="xrl-actions">
+                  <button id="xrlImportXmlBtn" type="button">Importar XML</button>
+                  <button id="xrlDownloadNotesBtn" type="button" class="secondary">Baixar XML</button>
+                  <button id="xrlExportBtn" type="button" class="secondary">Exportar</button>
+                  <button id="xrlManifestBtn" type="button" class="secondary">Manifestar</button>
+                </div>
+              </div>
+              <p class="subtitle-auth">Cada nota da tabela possui acao "Download XML". O botao acima baixa as notas atualmente filtradas.</p>
+
+              <div class="xrl-filters-grid">
+                <div class="xrl-field">
+                  <label for="xrlFilterSupplier">Fornecedor</label>
+                  <input id="xrlFilterSupplier" type="text" placeholder="Razao social" />
+                </div>
+                <div class="xrl-field">
+                  <label for="xrlFilterCnpj">CNPJ</label>
+                  <input id="xrlFilterCnpj" type="text" placeholder="00.000.000/0000-00" />
+                </div>
+                <div class="xrl-field">
+                  <label for="xrlFilterStatus">Status</label>
+                  <select id="xrlFilterStatus">
+                    <option value="">Todos</option>
+                    <option value="autorizada">Autorizada</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="rejeitada">Rejeitada</option>
+                    <option value="manifestacao">Manifestacao</option>
+                    <option value="cancelada">Cancelada</option>
+                  </select>
+                </div>
+                <div class="xrl-field">
+                  <label for="xrlFilterType">Tipo NF</label>
+                  <select id="xrlFilterType">
+                    <option value="">Todos</option>
+                    <option value="nfe">NF-e</option>
+                    <option value="cte">CT-e</option>
+                    <option value="nfse">NFS-e</option>
+                  </select>
+                </div>
+                <div class="xrl-field">
+                  <label for="xrlFilterOperation">Operacao</label>
+                  <select id="xrlFilterOperation">
+                    <option value="">Todas</option>
+                    <option value="entrada">Entrada</option>
+                    <option value="retorno">Retorno</option>
+                    <option value="devolucao">Devolucao</option>
+                    <option value="outros">Outros</option>
+                  </select>
+                </div>
+                <div class="xrl-field">
+                  <label for="xrlFilterValueMin">Valor minimo</label>
+                  <input id="xrlFilterValueMin" type="number" min="0" step="0.01" />
+                </div>
+                <div class="xrl-field">
+                  <label for="xrlFilterValueMax">Valor maximo</label>
+                  <input id="xrlFilterValueMax" type="number" min="0" step="0.01" />
+                </div>
+                <div class="xrl-field xrl-field-span-2">
+                  <label for="xrlFilterKey">Chave de acesso</label>
+                  <input id="xrlFilterKey" type="text" placeholder="Chave completa ou parcial" />
+                </div>
+              </div>
+
+              <div class="xrl-actions xrl-actions-left">
+                <button id="xrlApplyAdvancedFilters" type="button">Aplicar filtros</button>
+                <button id="xrlClearAdvancedFilters" type="button" class="secondary">Limpar filtros</button>
+              </div>
+            </section>
+
+            <section class="card xrl-block">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Numero</th>
+                      <th>Serie</th>
+                      <th>Fornecedor</th>
+                      <th>CNPJ</th>
+                      <th>Valor</th>
+                      <th>Emissao</th>
+                      <th>Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="xrlNotesTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+        </section>
+      </section>
+    </main>
+
+    <div id="xrlNoteModal" class="xrl-modal-backdrop hidden">
+      <div class="xrl-modal card">
+        <div class="xrl-modal-head">
+          <h2 id="xrlModalTitle">Detalhes da nota</h2>
+          <button id="xrlCloseModalTop" type="button" class="close-x">&times;</button>
         </div>
 
-        <div class="report-toolbar">
-          <label for="companyFilterSelect">Empresa</label>
-          <select id="companyFilterSelect"></select>
-
-          <label for="searchNotesInput">Pesquisar</label>
-          <input id="searchNotesInput" type="text" placeholder="Numero, fornecedor, chave..." />
+        <div class="xrl-note-tabs" id="xrlNoteTabs">
+          <button type="button" data-note-tab="general" class="is-active">Dados gerais</button>
+          <button type="button" data-note-tab="products">Produtos</button>
+          <button type="button" data-note-tab="xml">XML</button>
+          <button type="button" data-note-tab="events">Eventos</button>
         </div>
 
-        <div class="report-toolbar report-toolbar-extended">
-          <label for="supplierFilterInput">Fornecedor</label>
-          <input id="supplierFilterInput" type="text" placeholder="Razao social ou CNPJ do fornecedor" />
+        <section id="xrlTabGeneral" class="xrl-tab-panel is-active">
+          <dl id="xrlGeneralData" class="xrl-general-grid"></dl>
+        </section>
 
-          <label for="dateFromInput">Data inicial</label>
-          <input id="dateFromInput" type="date" />
-
-          <label for="dateToInput">Data final</label>
-          <input id="dateToInput" type="date" />
-
-          <label for="operationFilterSelect">Operacao</label>
-          <select id="operationFilterSelect">
-            <option value="">Todas</option>
-            <option value="entrada">Entrada</option>
-            <option value="retorno">Retorno</option>
-            <option value="devolucao">Devolucao</option>
-            <option value="outros">Outros</option>
-          </select>
-        </div>
-
-        <div class="report-actions-row">
-          <button id="btnAplicarFiltros" type="button">Aplicar filtros</button>
-          <button id="btnLimparFiltros" type="button" class="secondary">Limpar filtros</button>
-        </div>
-
-        <div class="report-kpis">
-          <article>
-            <span>Documentos</span>
-            <strong id="kpiQuantidade">0</strong>
-          </article>
-          <article>
-            <span>Valor total</span>
-            <strong id="kpiValor">R$ 0,00</strong>
-          </article>
-          <article>
-            <span>Ultimo envio</span>
-            <strong id="kpiUltimo">-</strong>
-          </article>
-          <article>
-            <span>Fornecedor em foco</span>
-            <strong id="kpiFornecedor">Todos</strong>
-          </article>
-        </div>
-
-        <section class="report-scope-box">
-          <div>
-            <h3>Produto destinado a recuperar automaticamente notas fiscais emitidas em nome do cliente</h3>
-            <p>O relatorio agora contempla filtros por data, busca livre, busca por fornecedor, separacao por empresa e download individual das notas XML.</p>
-          </div>
-          <div class="report-badges">
-            <span class="report-badge is-live">NFe por XML</span>
-            <span class="report-badge is-planned">CTe em evolucao</span>
-            <span class="report-badge is-review">NFs/NFS-e em validacao tecnica</span>
-            <span class="report-badge is-info">API do Governo: estudo de integracao</span>
+        <section id="xrlTabProducts" class="xrl-tab-panel" hidden>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Qtd</th>
+                  <th>Valor</th>
+                </tr>
+              </thead>
+              <tbody id="xrlProductsBody"></tbody>
+            </table>
           </div>
         </section>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>N da nota</th>
-                <th>Operacao</th>
-                <th>Chave</th>
-                <th>Emitido</th>
-                <th>Situacao</th>
-                <th>Prestador</th>
-                <th>Valor (R$)</th>
-                <th>Info</th>
-                <th>Acoes</th>
-              </tr>
-            </thead>
-            <tbody id="reportNotesBody"></tbody>
-          </table>
-        </div>
-      </section>
+        <section id="xrlTabXml" class="xrl-tab-panel" hidden>
+          <pre id="xrlXmlViewer" class="xrl-xml-viewer">Selecione a aba XML para carregar o conteudo formatado.</pre>
+        </section>
 
-      <section class="card" id="fechamento-mensal">
-        <div class="table-header">
-          <h2>Fechamento mensal</h2>
-          <button id="btnGerarFechamento" type="button">Gerar resumo</button>
-        </div>
+        <section id="xrlTabEvents" class="xrl-tab-panel" hidden>
+          <ol id="xrlEventsTimeline" class="xrl-timeline"></ol>
+        </section>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Periodo</th>
-                <th>Empresa</th>
-                <th>Quantidade</th>
-                <th>Valor total</th>
-              </tr>
-            </thead>
-            <tbody id="monthlyReportBody"></tbody>
-          </table>
+        <div class="xrl-modal-actions">
+          <button id="xrlCloseModalBottom" type="button" class="secondary">Fechar</button>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
 
     <script src="/relatorios.js"></script>
     <script src="/navbar.js"></script>
