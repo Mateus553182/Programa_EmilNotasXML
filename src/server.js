@@ -370,7 +370,7 @@ app.get('/api/empresas/me', authMiddleware, async (req, res) => {
       id: packageConfig.id,
       label: packageConfig.label,
       monthlyPrice: packageConfig.monthlyPrice,
-      nfeLimitMonthly: packageConfig.nfeLimitMonthly,
+      nfeLimitMonthly: packageConfig.displayNfeLimitMonthly || packageConfig.nfeLimitMonthly,
       overagePricePerNote: packageConfig.overagePricePerNote,
     },
     usage: {
@@ -578,7 +578,7 @@ app.post('/api/notas', authMiddleware, upload.single('xml'), async (req, res) =>
     const nfeCurrentMonth = await countCurrentMonthNotesForCompanies(companies);
     if (Number.isFinite(packageConfig.nfeLimitMonthly) && nfeCurrentMonth >= packageConfig.nfeLimitMonthly) {
       return res.status(400).json({
-        message: `Limite mensal do plano atingido (${packageConfig.nfeLimitMonthly} NFe/mes).`,
+        message: 'Limite mensal do plano atingido.',
       });
     }
 
@@ -707,23 +707,26 @@ const PACKAGE_OPTIONS = {
   basico: {
     id: 'basico',
     label: 'Basico',
-    monthlyPrice: 49.9,
-    nfeLimitMonthly: 100,
-    overagePricePerNote: 0.5,
+    monthlyPrice: 1500,
+    nfeLimitMonthly: 500,
+    displayNfeLimitMonthly: 500,
+    overagePricePerNote: 3,
   },
   profissional: {
     id: 'profissional',
     label: 'Profissional',
-    monthlyPrice: 99.9,
-    nfeLimitMonthly: 300,
-    overagePricePerNote: 0.33,
+    monthlyPrice: 2500,
+    nfeLimitMonthly: 1100,
+    displayNfeLimitMonthly: 1000,
+    overagePricePerNote: 2.5,
   },
   standard: {
     id: 'standard',
     label: 'Standard',
-    monthlyPrice: 149.9,
-    nfeLimitMonthly: 1000,
-    overagePricePerNote: 0.15,
+    monthlyPrice: 4000,
+    nfeLimitMonthly: 2200,
+    displayNfeLimitMonthly: 2000,
+    overagePricePerNote: 2,
   },
 };
 

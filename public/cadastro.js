@@ -1,21 +1,24 @@
 const PACKAGE_OPTIONS = {
   basico: {
     label: 'Basico',
-    monthlyPrice: 49.9,
-    nfeLimitMonthly: 100,
-    overagePricePerNote: 0.5,
+    monthlyPrice: 1500,
+    nfeLimitMonthly: 500,
+    overagePricePerNote: 3,
+    salesPitch: 'Ideal para empresas que estao estruturando a rotina fiscal com seguranca e previsibilidade.',
   },
   profissional: {
     label: 'Profissional',
-    monthlyPrice: 99.9,
-    nfeLimitMonthly: 300,
-    overagePricePerNote: 0.33,
+    monthlyPrice: 2500,
+    nfeLimitMonthly: 1000,
+    overagePricePerNote: 2.5,
+    salesPitch: 'Perfeito para operacoes em crescimento que precisam de escala com melhor custo por nota.',
   },
   standard: {
     label: 'Standard',
-    monthlyPrice: 149.9,
-    nfeLimitMonthly: 1000,
-    overagePricePerNote: 0.15,
+    monthlyPrice: 4000,
+    nfeLimitMonthly: 2000,
+    overagePricePerNote: 2,
+    salesPitch: 'Pensado para alto volume, com performance comercial forte e melhor custo unitario.',
   },
 };
 
@@ -168,7 +171,7 @@ function validateCurrentStep() {
 function updatePackageSummary() {
   const selectedPackage = getPackageConfig();
   selectedPackageLabel.textContent = selectedPackage.label;
-  selectedPackageHint.textContent = `Empresas ilimitadas + ${selectedPackage.nfeLimitMonthly} NFe/mes · Excedente: R$ ${selectedPackage.overagePricePerNote.toFixed(2).replace('.', ',')} por nota.`;
+  selectedPackageHint.textContent = `Empresas ilimitadas + ate ${selectedPackage.nfeLimitMonthly} NFe/mes · R$ ${selectedPackage.monthlyPrice.toFixed(2).replace('.', ',')} por mes. ${selectedPackage.salesPitch}`;
 
   document.querySelectorAll('.package-card').forEach((card) => {
     const input = card.querySelector('input[name="packageId"]');
