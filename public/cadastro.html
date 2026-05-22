@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2f3742" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=20260522g" />
     <title>Emil Notas XML - Cadastro</title>
   </head>
   <body>
@@ -73,27 +73,45 @@
             <legend>Escolha o plano</legend>
             <p class="step-hint">Empresas ilimitadas em todos os planos. A cobranca muda pelo volume de NFe armazenadas por mes.</p>
 
-            <div class="package-grid" id="packageGrid">
-              <label class="package-card active" data-package-id="basico">
-                <input type="radio" name="packageId" value="basico" checked />
-                <span class="package-name">Basico</span>
-                <strong>R$ 1.500,00 · ate 500 notas/mes</strong>
-                <small>Ideal para iniciar com controle fiscal profissional, previsibilidade e operacao organizada.</small>
-              </label>
+            <div class="package-carousel">
+              <button type="button" class="package-carousel-nav package-carousel-prev" id="btnPackagePrev" aria-label="Ver planos anteriores">‹</button>
+              <button type="button" class="package-carousel-nav package-carousel-next" id="btnPackageNext" aria-label="Ver próximos planos">›</button>
+              <div class="package-grid" id="packageGrid">
+                <label class="package-card active" data-package-id="basico">
+                  <input type="radio" name="packageId" value="basico" checked />
+                  <span class="package-name">Basico</span>
+                  <strong>R$ 1.500,00 · ate 500 notas/mes</strong>
+                  <small>Ideal para iniciar com controle fiscal profissional, previsibilidade e operacao organizada.</small>
+                </label>
 
-              <label class="package-card" data-package-id="profissional">
-                <input type="radio" name="packageId" value="profissional" />
-                <span class="package-name">Profissional</span>
-                <strong>R$ 2.500,00 · ate 1.000 notas/mes</strong>
-                <small>Melhor equilibrio entre volume, economia por nota e crescimento da operacao.</small>
-              </label>
+                <label class="package-card" data-package-id="profissional">
+                  <input type="radio" name="packageId" value="profissional" />
+                  <span class="package-name">Profissional</span>
+                  <strong>R$ 2.500,00 · ate 1.000 notas/mes</strong>
+                  <small>Melhor equilibrio entre volume, economia por nota e crescimento da operacao.</small>
+                </label>
 
-              <label class="package-card" data-package-id="standard">
-                <input type="radio" name="packageId" value="standard" />
-                <span class="package-name">Standard</span>
-                <strong>R$ 4.000,00 · ate 2.000 notas/mes</strong>
-                <small>Plano para alto volume, com melhor custo unitario e mais folego para escalar.</small>
-              </label>
+                <label class="package-card" data-package-id="standard">
+                  <input type="radio" name="packageId" value="standard" />
+                  <span class="package-name">Standard</span>
+                  <strong>R$ 4.000,00 · ate 2.000 notas/mes</strong>
+                  <small>Plano para alto volume, com melhor custo unitario e mais folego para escalar.</small>
+                </label>
+
+                <label class="package-card" data-package-id="premium5000">
+                  <input type="radio" name="packageId" value="premium5000" />
+                  <span class="package-name">Premium 5000</span>
+                  <strong>R$ 7.500,00 · ate 5.000 notas/mes</strong>
+                  <small>Projetado para operacoes intensivas com grande volume mensal de notas.</small>
+                </label>
+
+                <label class="package-card" data-package-id="particular">
+                  <input type="radio" name="packageId" value="particular" />
+                  <span class="package-name">Particular</span>
+                  <strong>Entre em contato · plano sob medida</strong>
+                  <small>Formato personalizado para necessidades especiais de volume, equipe e atendimento.</small>
+                </label>
+              </div>
             </div>
 
             <div class="codigo-empresa-box compact">
@@ -114,6 +132,6 @@
     </main>
 
     <footer class="page-footer container">&copy; 2026 - Emil Informática</footer>
-    <script src="/cadastro.js"></script>
+    <script src="/cadastro.js?v=20260522f"></script>
   </body>
 </html>

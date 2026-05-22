@@ -31,6 +31,13 @@ const { sendVerificationEmail } = require('./email-service');
 const app = express();
 const PORT = process.env.PORT || 3310;
 const EMAIL_CODE_TTL_MS = Number(process.env.EMAIL_CODE_TTL_MS || 30 * 60 * 1000);
+const MERCADO_PAGO_API_BASE = process.env.MERCADO_PAGO_API_BASE || 'https://api.mercadopago.com';
+const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
+const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+const MERCADO_PAGO_WEBHOOK_URL = process.env.MERCADO_PAGO_WEBHOOK_URL || `${APP_BASE_URL}/api/webhooks/mercado-pago`;
+const MERCADO_PAGO_SUCCESS_URL = process.env.MERCADO_PAGO_SUCCESS_URL || `${APP_BASE_URL}/dashboard`;
+const MERCADO_PAGO_PENDING_URL = process.env.MERCADO_PAGO_PENDING_URL || `${APP_BASE_URL}/dashboard`;
+const MERCADO_PAGO_FAILURE_URL = process.env.MERCADO_PAGO_FAILURE_URL || `${APP_BASE_URL}/dashboard`;
 const emailVerificationStore = new Map();
 
 const upload = multer({
@@ -370,8 +377,9 @@ app.get('/api/empresas/me', authMiddleware, async (req, res) => {
       id: packageConfig.id,
       label: packageConfig.label,
       monthlyPrice: packageConfig.monthlyPrice,
-      nfeLimitMonthly: packageConfig.displayNfeLimitMonthly || packageConfig.nfeLimitMonthly,
+      nfeLimitMonthly: packageConfig.nfeLimitMonthly,
       overagePricePerNote: packageConfig.overagePricePerNote,
+      requiresContact: packageConfig.requiresContact === true,
     },
     usage: {
       companies: companies.length,
@@ -709,24 +717,36 @@ const PACKAGE_OPTIONS = {
     label: 'Basico',
     monthlyPrice: 1500,
     nfeLimitMonthly: 500,
-    displayNfeLimitMonthly: 500,
     overagePricePerNote: 3,
   },
   profissional: {
     id: 'profissional',
     label: 'Profissional',
     monthlyPrice: 2500,
-    nfeLimitMonthly: 1100,
-    displayNfeLimitMonthly: 1000,
+    nfeLimitMonthly: 1000,
     overagePricePerNote: 2.5,
   },
   standard: {
     id: 'standard',
     label: 'Standard',
     monthlyPrice: 4000,
-    nfeLimitMonthly: 2200,
-    displayNfeLimitMonthly: 2000,
+    nfeLimitMonthly: 2000,
     overagePricePerNote: 2,
+  },
+  premium5000: {
+    id: 'premium5000',
+    label: 'Premium 5000',
+    monthlyPrice: 7500,
+    nfeLimitMonthly: 5000,
+    overagePricePerNote: 1.5,
+  },
+  particular: {
+    id: 'particular',
+    label: 'Particular',
+    monthlyPrice: null,
+    nfeLimitMonthly: null,
+    overagePricePerNote: null,
+    requiresContact: true,
   },
 };
 
@@ -735,6 +755,8 @@ function normalizePackageId(value) {
   if (normalized === 'basico' || normalized === 'essencial') return 'basico';
   if (normalized === 'profissional') return 'profissional';
   if (normalized === 'standard' || normalized === 'corporativo') return 'standard';
+  if (normalized === 'premium5000' || normalized === 'premium' || normalized === '5000') return 'premium5000';
+  if (normalized === 'particular' || normalized === 'sobmedida' || normalized === 'sob-medida') return 'particular';
   return '';
 }
 
@@ -748,6 +770,84 @@ function getUserPackageConfig(user) {
   // Legacy users may not have package metadata persisted.
   const fallbackPackageId = packageId || 'standard';
   return PACKAGE_OPTIONS[fallbackPackageId] || PACKAGE_OPTIONS.standard;
+}
+
+function ensureMercadoPagoConfigured() {
+  if (!MERCADO_PAGO_ACCESS_TOKEN) {
+    throw new Error('MERCADO_PAGO_ACCESS_TOKEN nao configurado no ambiente.');
+  }
+}
+
+async function mercadoPagoRequest(endpoint, options = {}) {
+  ensureMercadoPagoConfigured();
+
+  const url = `${MERCADO_PAGO_API_BASE}${endpoint}`;
+  const method = options.method || 'GET';
+  const response = await fetch(url, {
+    method,
+    headers: {
+      Authorization: `Bearer ${MERCADO_PAGO_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = data && (data.message || data.error || data.cause && data.cause[0] && data.cause[0].description);
+    throw new Error(message || `Falha na integracao Mercado Pago (${response.status}).`);
+  }
+
+  return data;
+}
+
+function ensureBillingState(user) {
+  if (!user.billing || typeof user.billing !== 'object') {
+    user.billing = {};
+  }
+  if (!Array.isArray(user.billing.pendingPayments)) {
+    user.billing.pendingPayments = [];
+  }
+  if (!Array.isArray(user.billing.transactions)) {
+    user.billing.transactions = [];
+  }
+  return user.billing;
+}
+
+function parseExternalReference(value) {
+  const source = String(value || '');
+  const parts = source.split(':');
+  if (parts.length < 4) return { userId: '', packageId: '' };
+  return {
+    userId: parts[1] || '',
+    packageId: parts[3] || '',
+  };
+}
+
+function upsertPaymentTransaction(billing, paymentData) {
+  const paymentId = String(paymentData && paymentData.id ? paymentData.id : '');
+  if (!paymentId) return;
+
+  const transaction = {
+    id: paymentId,
+    status: String(paymentData.status || ''),
+    statusDetail: String(paymentData.status_detail || ''),
+    approvedAt: paymentData.date_approved || null,
+    amount: Number(paymentData.transaction_amount || 0),
+    raw: paymentData,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const idx = billing.transactions.findIndex((item) => String(item.id) === paymentId);
+  if (idx >= 0) {
+    billing.transactions[idx] = transaction;
+  } else {
+    billing.transactions.unshift(transaction);
+    if (billing.transactions.length > 30) {
+      billing.transactions = billing.transactions.slice(0, 30);
+    }
+  }
 }
 
 function isDateInCurrentMonth(dateValue) {
@@ -1209,6 +1309,181 @@ app.post('/api/auth/alterar-senha', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao alterar senha:', error);
     return res.status(500).json({ error: 'Erro interno ao alterar senha.' });
+  }
+});
+
+app.get('/api/billing/me', authMiddleware, async (req, res) => {
+  try {
+    const registry = await readCompanyRegistry();
+    const user = registry.users.find((item) => item.id === req.auth.userId && item.active !== false);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario nao encontrado.' });
+    }
+
+    const billing = ensureBillingState(user);
+    return res.json({
+      package: getUserPackageConfig(user),
+      billing: {
+        pendingPayments: billing.pendingPayments,
+        transactions: billing.transactions,
+        lastApprovedPayment: billing.lastApprovedPayment || null,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Erro ao obter dados de cobranca.' });
+  }
+});
+
+app.post('/api/billing/mercado-pago/checkout', authMiddleware, async (req, res) => {
+  try {
+    const packageId = normalizePackageId(req.body && req.body.packageId);
+
+    const registry = await readCompanyRegistry();
+    const user = registry.users.find((item) => item.id === req.auth.userId && item.active !== false);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario nao encontrado.' });
+    }
+
+    const packageConfig = packageId ? PACKAGE_OPTIONS[packageId] : getUserPackageConfig(user);
+    if (!packageConfig) {
+      return res.status(400).json({ error: 'Plano invalido para cobranca.' });
+    }
+
+    if (packageConfig.requiresContact || !Number.isFinite(packageConfig.monthlyPrice)) {
+      return res.status(400).json({ error: 'Este plano exige atendimento comercial e nao possui checkout automatico.' });
+    }
+
+    const displayLimit = Number.isFinite(packageConfig.nfeLimitMonthly)
+      ? packageConfig.nfeLimitMonthly
+      : 'sob medida';
+
+    const externalReference = `user:${user.id}:plan:${packageConfig.id}:ts:${Date.now()}`;
+    const preferencePayload = {
+      items: [
+        {
+          id: `plano-${packageConfig.id}`,
+          title: `Plano ${packageConfig.label} - ate ${displayLimit} notas/mes`,
+          description: `Assinatura mensal do plano ${packageConfig.label}`,
+          quantity: 1,
+          currency_id: 'BRL',
+          unit_price: Number(packageConfig.monthlyPrice),
+        },
+      ],
+      payer: {
+        email: String(user.email || '').trim(),
+        name: String(user.name || '').trim(),
+      },
+      external_reference: externalReference,
+      notification_url: MERCADO_PAGO_WEBHOOK_URL,
+      back_urls: {
+        success: MERCADO_PAGO_SUCCESS_URL,
+        pending: MERCADO_PAGO_PENDING_URL,
+        failure: MERCADO_PAGO_FAILURE_URL,
+      },
+      auto_return: 'approved',
+      metadata: {
+        userId: user.id,
+        packageId: packageConfig.id,
+      },
+    };
+
+    const preference = await mercadoPagoRequest('/checkout/preferences', {
+      method: 'POST',
+      body: preferencePayload,
+    });
+
+    const billing = ensureBillingState(user);
+    billing.pendingPayments.unshift({
+      preferenceId: preference.id,
+      externalReference,
+      packageId: packageConfig.id,
+      amount: Number(packageConfig.monthlyPrice),
+      status: 'created',
+      createdAt: new Date().toISOString(),
+    });
+    if (billing.pendingPayments.length > 30) {
+      billing.pendingPayments = billing.pendingPayments.slice(0, 30);
+    }
+
+    await writeCompanyRegistry(registry);
+
+    return res.json({
+      preferenceId: preference.id,
+      initPoint: preference.init_point,
+      sandboxInitPoint: preference.sandbox_init_point,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Falha ao criar checkout Mercado Pago.' });
+  }
+});
+
+app.post('/api/webhooks/mercado-pago', async (req, res) => {
+  try {
+    const topic = String(req.query.topic || req.body && req.body.type || '').toLowerCase();
+    const paymentId = String(
+      req.query.id
+      || req.body && req.body.data && req.body.data.id
+      || req.body && req.body.resource && String(req.body.resource).split('/').pop()
+      || ''
+    ).trim();
+
+    // ACK rapido para eventos que nao sao de pagamento.
+    if (!paymentId || (topic && topic !== 'payment')) {
+      return res.status(200).json({ ok: true, ignored: true });
+    }
+
+    const paymentData = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}`);
+    const externalReference = paymentData.external_reference
+      || paymentData.metadata && paymentData.metadata.external_reference
+      || '';
+
+    const parsed = parseExternalReference(externalReference);
+    const userId = parsed.userId || String(paymentData.metadata && paymentData.metadata.userId || '').trim();
+    const packageId = normalizePackageId(parsed.packageId || paymentData.metadata && paymentData.metadata.packageId);
+
+    if (!userId) {
+      return res.status(200).json({ ok: true, ignored: true, reason: 'missing_user_reference' });
+    }
+
+    const registry = await readCompanyRegistry();
+    const user = registry.users.find((item) => item.id === userId && item.active !== false);
+    if (!user) {
+      return res.status(200).json({ ok: true, ignored: true, reason: 'user_not_found' });
+    }
+
+    const billing = ensureBillingState(user);
+    upsertPaymentTransaction(billing, paymentData);
+
+    billing.pendingPayments = billing.pendingPayments.map((item) => {
+      if (item.externalReference === externalReference || String(item.preferenceId) === String(paymentData.order && paymentData.order.id || '')) {
+        return {
+          ...item,
+          status: String(paymentData.status || item.status),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return item;
+    });
+
+    if (String(paymentData.status || '').toLowerCase() === 'approved') {
+      const paidPackage = PACKAGE_OPTIONS[packageId] || getUserPackageConfig(user);
+      user.package = paidPackage;
+      user.packageId = paidPackage.id;
+      billing.lastApprovedPayment = {
+        id: String(paymentData.id || ''),
+        amount: Number(paymentData.transaction_amount || 0),
+        approvedAt: paymentData.date_approved || new Date().toISOString(),
+        packageId: paidPackage.id,
+      };
+    }
+
+    billing.lastWebhookAt = new Date().toISOString();
+    await writeCompanyRegistry(registry);
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error('Erro no webhook Mercado Pago:', error);
+    return res.status(200).json({ ok: true, warning: 'webhook_received_with_error' });
   }
 });
 

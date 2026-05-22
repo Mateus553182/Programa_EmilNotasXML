@@ -20,6 +20,21 @@ const PACKAGE_OPTIONS = {
     overagePricePerNote: 2,
     salesPitch: 'Pensado para alto volume, com performance comercial forte e melhor custo unitario.',
   },
+  premium5000: {
+    label: 'Premium 5000',
+    monthlyPrice: 7500,
+    nfeLimitMonthly: 5000,
+    overagePricePerNote: 1.5,
+    salesPitch: 'Plano para operacoes intensivas, com limite alto e custo por nota ainda mais competitivo.',
+  },
+  particular: {
+    label: 'Particular',
+    monthlyPrice: null,
+    nfeLimitMonthly: null,
+    overagePricePerNote: null,
+    requiresContact: true,
+    salesPitch: 'Necessidades especificas? Montamos um plano sob medida para seu volume e sua operacao.',
+  },
 };
 
 const form = document.getElementById('cadastroForm');
@@ -31,9 +46,12 @@ const btnVoltar = document.getElementById('btnVoltar');
 const btnProximo = document.getElementById('btnProximo');
 const btnConcluir = document.getElementById('btnConcluir');
 const btnEnviarCodigo = document.getElementById('btnEnviarCodigo');
+const btnPackagePrev = document.getElementById('btnPackagePrev');
+const btnPackageNext = document.getElementById('btnPackageNext');
 
 const selectedPackageLabel = document.getElementById('selectedPackageLabel');
 const selectedPackageHint = document.getElementById('selectedPackageHint');
+const packageGrid = document.getElementById('packageGrid');
 
 const emailCodeHint = document.getElementById('emailCodeHint');
 const message = document.getElementById('cadastroMessage');
@@ -48,6 +66,39 @@ function getPackageConfig() {
     id: packageId,
     ...PACKAGE_OPTIONS[packageId],
   };
+}
+
+function resetPackageGridPosition() {
+  if (!packageGrid) return;
+  packageGrid.scrollLeft = 0;
+  requestAnimationFrame(() => {
+    packageGrid.scrollLeft = 0;
+    updatePackageCarouselNavState();
+  });
+}
+
+function updatePackageCarouselNavState() {
+  if (!packageGrid) return;
+
+  const maxScrollLeft = Math.max(0, packageGrid.scrollWidth - packageGrid.clientWidth);
+  const atStart = packageGrid.scrollLeft <= 2;
+  const atEnd = packageGrid.scrollLeft >= maxScrollLeft - 2;
+
+  if (btnPackagePrev) {
+    btnPackagePrev.classList.toggle('is-hidden', atStart);
+  }
+
+  if (btnPackageNext) {
+    btnPackageNext.classList.toggle('is-hidden', atEnd);
+  }
+}
+
+function scrollPackageGrid(direction) {
+  if (!packageGrid) return;
+
+  const card = packageGrid.querySelector('.package-card');
+  const cardWidth = card ? card.getBoundingClientRect().width : packageGrid.clientWidth / 3;
+  packageGrid.scrollBy({ left: (cardWidth + 16) * direction, behavior: 'smooth' });
 }
 
 function showStep(index) {
@@ -67,6 +118,10 @@ function showStep(index) {
   btnVoltar.disabled = index === 0;
   btnProximo.classList.toggle('hidden', index === steps.length - 1);
   btnConcluir.classList.toggle('hidden', index !== steps.length - 1);
+
+  if (index === 1 && packageGrid) {
+    resetPackageGridPosition();
+  }
 }
 
 function formatCpf(value) {
@@ -171,7 +226,16 @@ function validateCurrentStep() {
 function updatePackageSummary() {
   const selectedPackage = getPackageConfig();
   selectedPackageLabel.textContent = selectedPackage.label;
-  selectedPackageHint.textContent = `Empresas ilimitadas + ate ${selectedPackage.nfeLimitMonthly} NFe/mes · R$ ${selectedPackage.monthlyPrice.toFixed(2).replace('.', ',')} por mes. ${selectedPackage.salesPitch}`;
+
+  const limitText = Number.isFinite(selectedPackage.nfeLimitMonthly)
+    ? `ate ${selectedPackage.nfeLimitMonthly} NFe/mes`
+    : 'limite sob medida';
+
+  const priceText = Number.isFinite(selectedPackage.monthlyPrice)
+    ? `R$ ${selectedPackage.monthlyPrice.toFixed(2).replace('.', ',')} por mes`
+    : 'valor sob consulta';
+
+  selectedPackageHint.textContent = `Empresas ilimitadas + ${limitText} · ${priceText}. ${selectedPackage.salesPitch}`;
 
   document.querySelectorAll('.package-card').forEach((card) => {
     const input = card.querySelector('input[name="packageId"]');
@@ -289,6 +353,19 @@ Array.from(form.elements.packageId).forEach((input) => {
   input.addEventListener('change', updatePackageSummary);
 });
 
+if (btnPackagePrev) {
+  btnPackagePrev.addEventListener('click', () => scrollPackageGrid(-1));
+}
+
+if (btnPackageNext) {
+  btnPackageNext.addEventListener('click', () => scrollPackageGrid(1));
+}
+
+if (packageGrid) {
+  packageGrid.addEventListener('scroll', updatePackageCarouselNavState, { passive: true });
+  window.addEventListener('resize', updatePackageCarouselNavState);
+}
+
 document.getElementById('email').addEventListener('input', () => {
   emailVerificationCodeSent = false;
   emailVerified = false;
@@ -302,3 +379,5 @@ document.getElementById('cpf').addEventListener('input', (event) => {
 
 showStep(0);
 updatePackageSummary();
+window.addEventListener('load', resetPackageGridPosition);
+window.addEventListener('pageshow', resetPackageGridPosition);

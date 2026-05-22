@@ -501,6 +501,7 @@ td.actions button.delete {
 .cadastro-card {
   width: min(980px, 100%);
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .cadastro-hero {
@@ -593,6 +594,7 @@ td.actions button.delete {
   border: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
 .wizard-step legend {
@@ -652,8 +654,82 @@ td.actions button.delete {
   margin-bottom: 1.25rem;
 }
 
+.package-carousel {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 1.25rem;
+}
+
 .package-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 0;
+  scrollbar-width: none;
+  padding-bottom: 0.25rem;
+}
+
+.package-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.package-grid .package-card {
+  flex: 0 0 calc((100% - 2rem) / 3);
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.package-carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(21, 171, 200, 0.16);
+  border: 1px solid rgba(21, 171, 200, 0.32);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.3rem;
+  font-weight: 700;
+  pointer-events: auto;
+  box-shadow: 0 8px 18px rgba(32, 42, 61, 0.08);
+  z-index: 2;
+  cursor: pointer;
+  opacity: 0.18;
+  transition: opacity 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.package-carousel:hover .package-carousel-nav {
+  opacity: 0.92;
+  background: rgba(21, 171, 200, 0.82);
+  box-shadow: 0 12px 24px rgba(32, 42, 61, 0.14);
+}
+
+.package-carousel-nav:hover {
+  transform: translateY(-50%) scale(1.04);
+}
+
+.package-carousel-prev {
+  left: 0.35rem;
+}
+
+.package-carousel-next {
+  right: 0.35rem;
+}
+
+.package-carousel-nav.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .user-type-card,
@@ -1314,6 +1390,24 @@ input.cep-error {
   .form-grid,
   .company-grid {
     grid-template-columns: 1fr;
+  }
+
+  .package-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    scrollbar-width: auto;
+  }
+
+  .package-carousel-nav {
+    display: none;
+  }
+
+  .package-grid .package-card {
+    flex: 1 1 auto;
+    min-width: 0;
+    scroll-snap-align: none;
   }
 
   .inline-actions {
