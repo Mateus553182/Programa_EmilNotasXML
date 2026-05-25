@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emil-notas-xml-v59';
+const CACHE_NAME = 'emil-notas-xml-v61';
 const OFFLINE_URLS = [
   '/',
   '/login',
@@ -7,6 +7,7 @@ const OFFLINE_URLS = [
   '/empresas',
   '/empresas-secundarias',
   '/relatorios',
+  '/documentos-fiscais',
   '/alterar-senha',
   '/login.html',
   '/acesso.html',
@@ -14,6 +15,7 @@ const OFFLINE_URLS = [
   '/empresas.html',
   '/empresas-secundarias.html',
   '/relatorios.html',
+  '/documentos-fiscais.html',
   '/alterar-senha.html',
   '/styles.css',
   '/login.js',
@@ -22,6 +24,7 @@ const OFFLINE_URLS = [
   '/empresas.js',
   '/empresas-secundarias.js',
   '/relatorios.js',
+  '/documentos-fiscais.js',
   '/navbar.js',
   '/alterar-senha.js',
   '/manifest.webmanifest',

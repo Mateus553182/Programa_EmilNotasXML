@@ -12,6 +12,8 @@
   --card: #ffffff;
   --border: #d9dee7;
   --danger: #9d0208;
+  --layout-max-width: 1120px;
+  --layout-gutter: 1rem;
 }
 
 * {
@@ -27,7 +29,7 @@ body {
 }
 
 .container {
-  width: min(1120px, 95vw);
+  width: min(var(--layout-max-width), calc(100% - (var(--layout-gutter) * 2)));
   margin: 1rem auto 2.4rem;
   display: grid;
   gap: 1rem;
@@ -63,7 +65,7 @@ body {
 }
 
 .topbar-inner {
-  width: min(1120px, 95vw);
+  width: min(var(--layout-max-width), calc(100% - (var(--layout-gutter) * 2)));
   margin: 0 auto;
   height: 80px;
   display: flex;
@@ -1449,12 +1451,14 @@ input.cep-error {
 }
 
 .navbar-inner {
-  width: min(1120px, 95vw);
+  width: min(var(--layout-max-width), calc(100% - (var(--layout-gutter) * 2)));
   margin: 0 auto;
   height: 80px;
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  position: relative;
+  left: -16px;
 }
 
 .navbar-brand {
@@ -1659,6 +1663,7 @@ input.cep-error {
     height: auto;
     flex-wrap: wrap;
     padding: 0.4rem 0;
+    left: 0;
   }
 
   .nav-link {
