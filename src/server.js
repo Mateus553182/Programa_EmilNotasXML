@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const crypto = require('crypto');
 const forge = require('node-forge');
+const archiver = require('archiver');
 const { v4: uuidv4 } = require('uuid');
 
 const {
@@ -706,6 +707,223 @@ app.delete('/api/notas/:id', authMiddleware, async (req, res) => {
   return res.status(204).send();
 });
 
+function parseNoteValue(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const raw = String(value || '').trim();
+  if (!raw) return 0;
+
+  const normalized = raw
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .replace(/[^0-9.-]/g, '');
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatDateIso(value) {
+  const date = new Date(value || '');
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeCnpjBoundary(value, fallback, padChar) {
+  const digits = normalizeDigits(value || '').slice(0, 14);
+  if (!digits) return fallback;
+  return digits.padEnd(14, padChar);
+}
+
+function extractNoteNumber(note) {
+  const direct = String(note && note.numero ? note.numero : '').trim();
+  if (direct) return direct;
+
+  const chave = normalizeDigits(note && note.chave ? note.chave : '');
+  if (chave.length >= 34) {
+    return chave.substring(25, 34);
+  }
+
+  return '';
+}
+
+function toDocumentosFiscaisPayload(note) {
+  return {
+    id: note.id,
+    numero: extractNoteNumber(note),
+    cnpj: normalizeDigits(note.cnpjEmitente || ''),
+    nome: String(note.razaoEmitente || ''),
+    chave: String(note.chave || ''),
+    dataEmissao: formatDateIso(note.emissao || note.uploadedAt),
+    valor: parseNoteValue(note.valorTotal),
+  };
+}
+
+async function resolveFilteredDocumentosFiscais(req) {
+  const { currentUser, companies } = await resolveAuthUser(req);
+  if (!currentUser) {
+    return { errorStatus: 404, errorMessage: 'Usuario da sessao nao encontrado.' };
+  }
+
+  const allowedCompanyIds = companies.map((company) => company.id);
+  if (!allowedCompanyIds.length) {
+    return { company: null, notes: [] };
+  }
+
+  const requestedCompanyId = String(req.query.companyId || '').trim();
+  if (requestedCompanyId && !allowedCompanyIds.includes(requestedCompanyId)) {
+    return { errorStatus: 403, errorMessage: 'Empresa selecionada nao pertence ao usuario logado.' };
+  }
+
+  const targetCompanyId = requestedCompanyId || allowedCompanyIds[0];
+  const selectedCompany = companies.find((company) => company.id === targetCompanyId) || null;
+
+  const dataDe = String(req.query.dataDe || '').trim();
+  const dataAte = String(req.query.dataAte || '').trim();
+
+  const notes = await listNotes(targetCompanyId, {
+    dataDe,
+    dataAte,
+  });
+
+  const cnpjDe = normalizeCnpjBoundary(req.query.cnpjDe, '00000000000000', '0');
+  const cnpjAte = normalizeCnpjBoundary(req.query.cnpjAte, '99999999999999', '9');
+
+  const filtered = notes
+    .filter((note) => {
+      const cnpj = normalizeDigits(note.cnpjEmitente || '').slice(0, 14).padStart(14, '0');
+      return cnpj >= cnpjDe && cnpj <= cnpjAte;
+    })
+    .sort((a, b) => {
+      const left = new Date(a.emissao || a.uploadedAt || 0).getTime();
+      const right = new Date(b.emissao || b.uploadedAt || 0).getTime();
+      return right - left;
+    });
+
+  return {
+    company: selectedCompany,
+    notes: filtered,
+    filters: {
+      dataDe,
+      dataAte,
+      cnpjDe,
+      cnpjAte,
+    },
+  };
+}
+
+function escapeCsvCell(value) {
+  const text = String(value == null ? '' : value);
+  if (/[";\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+app.get('/api/documentos-fiscais', authMiddleware, async (req, res) => {
+  const result = await resolveFilteredDocumentosFiscais(req);
+  if (result.errorStatus) {
+    return res.status(result.errorStatus).json({ message: result.errorMessage });
+  }
+
+  return res.json({
+    company: result.company,
+    filters: result.filters,
+    notes: (result.notes || []).map(toDocumentosFiscaisPayload),
+  });
+});
+
+app.get('/api/documentos-fiscais/exportar-excel', authMiddleware, async (req, res) => {
+  const result = await resolveFilteredDocumentosFiscais(req);
+  if (result.errorStatus) {
+    return res.status(result.errorStatus).json({ message: result.errorMessage });
+  }
+
+  const mapped = (result.notes || []).map(toDocumentosFiscaisPayload);
+  const header = ['Numero', 'CNPJ', 'Nome', 'Chave', 'Data Emissao', 'Valor'];
+  const rows = mapped.map((item) => [
+    item.numero,
+    item.cnpj,
+    item.nome,
+    item.chave,
+    item.dataEmissao,
+    item.valor.toFixed(2).replace('.', ','),
+  ]);
+
+  const csv = [header, ...rows]
+    .map((row) => row.map(escapeCsvCell).join(';'))
+    .join('\r\n');
+
+  const companyName = String(result.company && result.company.name ? result.company.name : 'empresa')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9-_]/g, '');
+  const from = (result.filters && result.filters.dataDe ? result.filters.dataDe : '').replace(/-/g, '');
+  const to = (result.filters && result.filters.dataAte ? result.filters.dataAte : '').replace(/-/g, '');
+  const fileName = `relacao-${companyName || 'empresa'}-${from || 'inicio'}-a-${to || 'fim'}.xls`;
+
+  res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  return res.send(`\uFEFF${csv}`);
+});
+
+app.get('/api/documentos-fiscais/download-xml-zip', authMiddleware, async (req, res) => {
+  const result = await resolveFilteredDocumentosFiscais(req);
+  if (result.errorStatus) {
+    return res.status(result.errorStatus).json({ message: result.errorMessage });
+  }
+
+  const files = [];
+  for (const note of result.notes || []) {
+    if (!note || !note.xmlPath) continue;
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const content = await fs.readFile(note.xmlPath);
+      const safeKey = normalizeDigits(note.chave || '') || note.id;
+      files.push({
+        name: `${safeKey}-procNFe.xml`,
+        content,
+      });
+    } catch {
+      // Ignore missing files and keep processing available XMLs.
+    }
+  }
+
+  if (!files.length) {
+    return res.status(404).json({ message: 'Nenhum XML encontrado para os filtros informados.' });
+  }
+
+  const companyName = String(result.company && result.company.name ? result.company.name : 'empresa')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9-_]/g, '');
+  const from = (result.filters && result.filters.dataDe ? result.filters.dataDe : '').replace(/-/g, '');
+  const to = (result.filters && result.filters.dataAte ? result.filters.dataAte : '').replace(/-/g, '');
+  const fileName = `xml-${companyName || 'empresa'}-${from || 'inicio'}-a-${to || 'fim'}.zip`;
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+  const archive = archiver('zip', {
+    zlib: { level: 9 },
+  });
+
+  archive.on('error', (error) => {
+    if (!res.headersSent) {
+      res.status(500).json({ message: error.message || 'Erro ao gerar arquivo ZIP.' });
+    } else {
+      res.end();
+    }
+  });
+
+  archive.pipe(res);
+  files.forEach((item) => {
+    archive.append(item.content, { name: item.name });
+  });
+
+  await archive.finalize();
+  return null;
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
@@ -1273,6 +1491,10 @@ app.get('/empresas-secundarias', (req, res) => {
 
 app.get('/relatorios', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'relatorios.html'));
+});
+
+app.get('/documentos-fiscais', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'documentos-fiscais.html'));
 });
 
 app.get('/alterar-senha', (req, res) => {

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f3742" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Emil Notas XML - Documentos Fiscais</title>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="/dashboard">
+          <img src="/logo-emil-nova.png" alt="Emil" />
+          NotasXML
+        </a>
+
+        <button class="navbar-toggle" id="navbarToggle" aria-label="Menu">&#9776;</button>
+
+        <div class="navbar-menu" id="navbarMenu">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Ferramentas <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown"></div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Cadastramento <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/empresas">Empresas</a>
+              <hr />
+              <span class="dropdown-disabled">Usuarios (em breve)</span>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link" style="color:#fff;">Movimentar <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown">
+              <a href="/documentos-fiscais">Documentos Fiscais</a>
+            </div>
+          </div>
+
+          <div class="nav-item" data-dropdown>
+            <button class="nav-link">Relatorios <span class="caret">&#9660;</span></button>
+            <div class="nav-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="nav-item" data-dropdown>
+            <button class="nav-user-btn nav-link" id="navUserLabel">Ola!</button>
+            <div class="nav-dropdown" style="right:0;left:auto;">
+              <a href="/alterar-senha">Alterar senha</a>
+            </div>
+          </div>
+          <button class="nav-logout-btn" data-nav-logout>Sair</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <section class="card dfx-page">
+        <header class="dfx-header">
+          <h2>Documentos Fiscais</h2>
+          <p class="subtitle-auth">Selecione empresa, periodo e intervalo de CNPJ para consultar e baixar os XMLs.</p>
+        </header>
+
+        <section class="dfx-filters" aria-label="Filtros de documentos fiscais">
+          <div class="dfx-filter-row">
+            <label class="dfx-field dfx-field-company" for="dfxEmpresa">
+              <span>Empresa:</span>
+              <select id="dfxEmpresa"></select>
+            </label>
+
+            <label class="dfx-field" for="dfxDataDe">
+              <span>Periodo:</span>
+              <input id="dfxDataDe" type="date" />
+            </label>
+
+            <label class="dfx-field" for="dfxDataAte">
+              <span>&nbsp;</span>
+              <input id="dfxDataAte" type="date" />
+            </label>
+
+            <button id="dfxBuscar" type="button" class="dfx-btn dfx-btn-primary">Buscar</button>
+          </div>
+
+          <div class="dfx-filter-row dfx-filter-row-secondary">
+            <label class="dfx-field" for="dfxCnpjDe">
+              <span>CNPJ:</span>
+              <input id="dfxCnpjDe" type="text" maxlength="18" placeholder="00000000000000" />
+            </label>
+
+            <label class="dfx-field" for="dfxCnpjAte">
+              <span>&nbsp;</span>
+              <input id="dfxCnpjAte" type="text" maxlength="18" placeholder="99999999999999" />
+            </label>
+
+            <button id="dfxExcel" type="button" class="dfx-btn dfx-btn-ghost" disabled>Relacao em Excel</button>
+            <button id="dfxDownloadZip" type="button" class="dfx-btn dfx-btn-primary" disabled>Fazer Download dos Arquivos XML (Zip)</button>
+          </div>
+        </section>
+
+        <div class="table-wrapper dfx-table-wrapper">
+          <table class="dfx-table" aria-label="Tabela de documentos fiscais">
+            <thead>
+              <tr>
+                <th>N° Nota</th>
+                <th>CNPJ</th>
+                <th>Nome</th>
+                <th>Chave</th>
+                <th>Data Emissao</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="dfxTableBody">
+              <tr>
+                <td colspan="6" class="dfx-empty">Selecione os filtros e clique em Buscar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p id="dfxMessage" class="message"></p>
+      </section>
+    </main>
+
+    <footer class="page-footer container">&copy; 2026 - Emil Informatica</footer>
+
+    <script src="/documentos-fiscais.js"></script>
+    <script src="/navbar.js"></script>
+  </body>
+</html>
