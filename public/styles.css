@@ -2299,6 +2299,56 @@ input.cep-error {
   border-color: #cbd7e6;
 }
 
+.dfx-btn-download {
+  position: relative;
+  border-radius: 10px;
+  padding-left: 2.15rem;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 18px rgba(39, 58, 84, 0.16);
+}
+
+.dfx-btn-download::before {
+  content: '\2193';
+  position: absolute;
+  left: 0.78rem;
+  top: 50%;
+  transform: translateY(-52%);
+  font-size: 0.9rem;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.dfx-btn-download:focus-visible {
+  outline: 2px solid rgba(21, 171, 200, 0.48);
+  outline-offset: 2px;
+}
+
+.dfx-btn-download-excel {
+  background: linear-gradient(135deg, #eef8ee 0%, #d9f0dc 100%);
+  color: #245a2e;
+  border-color: #9ac9a2;
+}
+
+.dfx-btn-download-excel:hover {
+  background: linear-gradient(135deg, #e5f4e7 0%, #cae9cf 100%);
+  border-color: #88bc91;
+}
+
+.dfx-btn-download-zip {
+  background: linear-gradient(135deg, #18afd2 0%, #128db5 100%);
+  border-color: #0f85ab;
+  color: #fff;
+}
+
+.dfx-btn-download-zip:hover {
+  background: linear-gradient(135deg, #1bb8dc 0%, #0f81a8 100%);
+  border-color: #0e7d9f;
+}
+
+.dfx-btn-download:disabled {
+  box-shadow: none;
+}
+
 .dfx-table-wrapper {
   border: 1px solid var(--border);
   border-radius: 10px;
