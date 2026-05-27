@@ -2199,6 +2199,10 @@ input.cep-error {
 .dfx-page {
   display: grid;
   gap: 1rem;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 88% -30%, rgba(38, 180, 216, 0.12), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f9fbfe 100%);
 }
 
 .dfx-header {
@@ -2206,13 +2210,19 @@ input.cep-error {
   gap: 0.35rem;
 }
 
+.dfx-header h2 {
+  font-size: clamp(1.75rem, 2.2vw, 2.05rem);
+  letter-spacing: -0.01em;
+}
+
 .dfx-filters {
   display: grid;
   gap: 0.75rem;
-  padding: 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: linear-gradient(180deg, #ffffff 0, #f7fbff 100%);
+  padding: 1rem;
+  border: 1px solid #d7deea;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0, #f5f9ff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 8px 22px rgba(31, 49, 77, 0.06);
 }
 
 .dfx-filter-row {
@@ -2235,7 +2245,7 @@ input.cep-error {
   font-family: 'Archivo', sans-serif;
   font-size: 0.9rem;
   font-weight: 700;
-  color: #2a374b;
+  color: #24344c;
 }
 
 .dfx-field input,
@@ -2243,37 +2253,43 @@ input.cep-error {
   width: 100%;
   min-width: 0;
   height: 38px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 1px solid #c8d3e3;
+  border-radius: 8px;
   padding: 0 0.65rem;
   font-family: 'Archivo', sans-serif;
   font-size: 0.92rem;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff 0, #fdfefe 100%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .dfx-field input:focus,
 .dfx-field select:focus {
   border-color: var(--action);
-  box-shadow: 0 0 0 3px rgba(21, 171, 200, 0.16);
+  box-shadow: 0 0 0 3px rgba(21, 171, 200, 0.2);
+  background: #ffffff;
   outline: none;
 }
 
 .dfx-btn {
   height: 38px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0 0.95rem;
+  padding: 0 1rem;
   font-family: 'Archivo', sans-serif;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 120ms ease, filter 120ms ease, background 160ms ease;
+  transition: transform 120ms ease, filter 120ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .dfx-btn:hover {
   transform: translateY(-1px);
   filter: brightness(1.03);
+}
+
+.dfx-btn:active {
+  transform: translateY(0);
 }
 
 .dfx-btn:disabled {
@@ -2283,20 +2299,21 @@ input.cep-error {
 }
 
 .dfx-btn-primary {
-  background: var(--action);
-  border-color: var(--action);
+  background: linear-gradient(135deg, #18afd2 0, #1090bc 100%);
+  border-color: #0f88b0;
   color: #fff;
+  box-shadow: 0 10px 22px rgba(16, 144, 188, 0.3);
 }
 
 .dfx-btn-primary:hover {
-  background: var(--action-soft);
-  border-color: var(--action-soft);
+  background: linear-gradient(135deg, #25b9db 0, #0f89b4 100%);
+  border-color: #0c80a7;
 }
 
 .dfx-btn-ghost {
-  background: #eef4fb;
-  color: #1f486f;
-  border-color: #cbd7e6;
+  background: linear-gradient(180deg, #eff5fb 0, #e7eff8 100%);
+  color: #2a4f75;
+  border-color: #bfd0e3;
 }
 
 .dfx-btn-download {
@@ -2304,7 +2321,7 @@ input.cep-error {
   border-radius: 10px;
   padding-left: 2.15rem;
   letter-spacing: 0.01em;
-  box-shadow: 0 8px 18px rgba(39, 58, 84, 0.16);
+  box-shadow: 0 10px 20px rgba(39, 58, 84, 0.16);
 }
 
 .dfx-btn-download::before {
@@ -2350,10 +2367,12 @@ input.cep-error {
 }
 
 .dfx-table-wrapper {
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: 1px solid #ccd8e8;
+  border-radius: 12px;
   overflow: auto;
   max-height: 520px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(26, 45, 73, 0.08);
 }
 
 .dfx-table {
@@ -2368,7 +2387,7 @@ input.cep-error {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #58799f;
+  background: linear-gradient(135deg, #5a7fa8 0, #4e739b 100%);
   color: #fff;
   text-align: left;
   font-size: 0.84rem;
@@ -2377,18 +2396,18 @@ input.cep-error {
 }
 
 .dfx-table tbody td {
-  padding: 0.56rem 0.65rem;
-  border-bottom: 1px solid #edf1f6;
+  padding: 0.62rem 0.65rem;
+  border-bottom: 1px solid #e8edf4;
   color: #1f2d3f;
   vertical-align: top;
 }
 
 .dfx-table tbody tr:nth-child(even) {
-  background: #fbfcfe;
+  background: #f9fbfe;
 }
 
 .dfx-table tbody tr:hover {
-  background: #f0f8ff;
+  background: #ecf6ff;
 }
 
 .dfx-link-button {
@@ -2402,6 +2421,9 @@ input.cep-error {
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color 140ms ease, text-decoration-color 140ms ease;
 }
 
 .dfx-link-button:hover {
