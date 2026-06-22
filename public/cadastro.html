@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2f3742" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260525b" />
+    <link rel="stylesheet" href="/styles.css?v=20260622a" />
     <title>Emil Notas XML - Cadastro</title>
   </head>
   <body>
@@ -27,7 +27,7 @@
         <div class="cadastro-hero">
           <div>
             <h2>Cadastre sua operação</h2>
-            <p class="subtitle-auth">Cadastro em 2 etapas: dados pessoais e escolha do plano. Após o acesso, adicione seu certificado e empresas.</p>
+            <p class="subtitle-auth">Cadastro em 3 etapas: usuario, plano e pagamento (esboco Mercado Pago). Apos o acesso, adicione seu certificado e empresas.</p>
           </div>
         </div>
 
@@ -35,6 +35,8 @@
           <div class="step active" data-step="1"><span class="step-number">1</span><span class="step-label">Usuário</span></div>
           <div class="step-line"></div>
           <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Plano</span></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">Pagamento</span></div>
         </div>
 
         <form id="cadastroForm">
@@ -121,6 +123,40 @@
             </div>
           </fieldset>
 
+          <fieldset class="wizard-step hidden" id="step3">
+            <legend>Pagamento (esboco)</legend>
+            <p class="step-hint">Fluxo sugerido: cobrar a primeira mensalidade e, em seguida, criar a assinatura recorrente no Mercado Pago.</p>
+
+            <div class="codigo-empresa-box compact payment-summary-box">
+              <span>Resumo para cobranca:</span>
+              <strong id="paymentSelectedPlan">Basico</strong>
+              <small id="paymentSelectedPlanHint">Valor mensal, limite e texto comercial do plano escolhido.</small>
+            </div>
+
+            <div class="payment-outline-grid">
+              <article class="payment-outline-card">
+                <h3>1) Assinatura (Preapproval)</h3>
+                <p>Endpoint recomendado para criar assinatura recorrente:</p>
+                <a id="paymentPreapprovalDocLink" href="https://www.mercadopago.com.br/developers/pt/reference/online-payments/subscriptions/create-preapproval/post" target="_blank" rel="noreferrer">Documentacao oficial de Preapproval</a>
+                <button type="button" id="btnOpenPreapprovalRedirect" class="secondary">Abrir link de assinatura (quando configurado)</button>
+              </article>
+
+              <article class="payment-outline-card">
+                <h3>2) Checkout Bricks (cartao)</h3>
+                <p>Brick para coletar cartao com seguranca e cobrar primeira mensalidade:</p>
+                <a id="paymentBricksDocLink" href="https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/card-payment-brick/introduction" target="_blank" rel="noreferrer">Documentacao Card Payment Brick</a>
+                <button type="button" id="btnOpenBricksRedirect" class="secondary">Abrir link do Brick (quando configurado)</button>
+              </article>
+            </div>
+
+            <label class="payment-confirm-line" for="paymentConfirmMock">
+              <input id="paymentConfirmMock" type="checkbox" />
+              Entendi que esta etapa e um esboco e os links de redirecionamento serao configurados depois.
+            </label>
+
+            <p id="paymentOutlineHint" class="field-hint">Carregando configuracao de pagamento...</p>
+          </fieldset>
+
           <div class="wizard-nav">
             <button type="button" id="btnVoltar" class="secondary" disabled>Voltar</button>
             <button type="button" id="btnProximo">Próximo</button>
@@ -132,6 +168,6 @@
     </main>
 
     <footer class="page-footer container">&copy; 2026 - Emil Informática</footer>
-    <script src="/cadastro.js?v=20260522f"></script>
+    <script src="/cadastro.js?v=20260622a"></script>
   </body>
 </html>

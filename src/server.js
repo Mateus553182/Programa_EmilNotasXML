@@ -39,6 +39,10 @@ const MERCADO_PAGO_WEBHOOK_URL = process.env.MERCADO_PAGO_WEBHOOK_URL || `${APP_
 const MERCADO_PAGO_SUCCESS_URL = process.env.MERCADO_PAGO_SUCCESS_URL || `${APP_BASE_URL}/dashboard`;
 const MERCADO_PAGO_PENDING_URL = process.env.MERCADO_PAGO_PENDING_URL || `${APP_BASE_URL}/dashboard`;
 const MERCADO_PAGO_FAILURE_URL = process.env.MERCADO_PAGO_FAILURE_URL || `${APP_BASE_URL}/dashboard`;
+const MERCADO_PAGO_PREAPPROVAL_DOC_URL = 'https://www.mercadopago.com.br/developers/pt/reference/online-payments/subscriptions/create-preapproval/post';
+const MERCADO_PAGO_BRICKS_DOC_URL = 'https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/card-payment-brick/introduction';
+const MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL = process.env.MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL || '';
+const MERCADO_PAGO_BRICKS_REDIRECT_URL = process.env.MERCADO_PAGO_BRICKS_REDIRECT_URL || '';
 const emailVerificationStore = new Map();
 
 const upload = multer({
@@ -1385,6 +1389,34 @@ app.post('/api/cadastro/certificado/address-preview', (req, res) => {
       });
     }
   });
+});
+
+app.get('/api/cadastro/payment-outline', async (req, res) => {
+  try {
+    const packageId = normalizePackageId(req.query && req.query.packageId ? req.query.packageId : '');
+    const selectedPackage = PACKAGE_OPTIONS[packageId || 'basico'];
+
+    return res.json({
+      ok: true,
+      package: {
+        id: selectedPackage.id,
+        label: selectedPackage.label,
+        monthlyPrice: selectedPackage.monthlyPrice,
+        nfeLimitMonthly: selectedPackage.nfeLimitMonthly,
+        requiresContact: selectedPackage.requiresContact === true,
+      },
+      preapprovalDocUrl: MERCADO_PAGO_PREAPPROVAL_DOC_URL,
+      bricksDocUrl: MERCADO_PAGO_BRICKS_DOC_URL,
+      preapprovalRedirectUrl: MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL,
+      bricksRedirectUrl: MERCADO_PAGO_BRICKS_REDIRECT_URL,
+      redirectLinksConfigured: Boolean(
+        String(MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL || '').trim()
+        || String(MERCADO_PAGO_BRICKS_REDIRECT_URL || '').trim()
+      ),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Falha ao montar esboco de pagamento.' });
+  }
 });
 
 app.post('/api/cadastro', async (req, res) => {

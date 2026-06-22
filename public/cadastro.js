@@ -53,12 +53,23 @@ const selectedPackageLabel = document.getElementById('selectedPackageLabel');
 const selectedPackageHint = document.getElementById('selectedPackageHint');
 const packageGrid = document.getElementById('packageGrid');
 
+const paymentSelectedPlan = document.getElementById('paymentSelectedPlan');
+const paymentSelectedPlanHint = document.getElementById('paymentSelectedPlanHint');
+const paymentOutlineHint = document.getElementById('paymentOutlineHint');
+const paymentConfirmMock = document.getElementById('paymentConfirmMock');
+const paymentPreapprovalDocLink = document.getElementById('paymentPreapprovalDocLink');
+const paymentBricksDocLink = document.getElementById('paymentBricksDocLink');
+const btnOpenPreapprovalRedirect = document.getElementById('btnOpenPreapprovalRedirect');
+const btnOpenBricksRedirect = document.getElementById('btnOpenBricksRedirect');
+
 const emailCodeHint = document.getElementById('emailCodeHint');
 const message = document.getElementById('cadastroMessage');
 
 let currentStep = 0;
 let emailVerificationCodeSent = false;
 let emailVerified = false;
+let cachedPaymentOutlinePackageId = '';
+let cachedPaymentOutlineData = null;
 
 function getPackageConfig() {
   const packageId = form.elements.packageId.value || 'basico';
@@ -121,6 +132,104 @@ function showStep(index) {
 
   if (index === 1 && packageGrid) {
     resetPackageGridPosition();
+  }
+
+  if (index === 2) {
+    loadPaymentOutline();
+  }
+}
+
+function formatMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 'Sob consulta';
+  return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function updatePaymentSummary() {
+  const selectedPackage = getPackageConfig();
+  if (!paymentSelectedPlan || !paymentSelectedPlanHint) return;
+
+  paymentSelectedPlan.textContent = selectedPackage.label;
+
+  const priceText = Number.isFinite(selectedPackage.monthlyPrice)
+    ? `${formatMoney(selectedPackage.monthlyPrice)}/mes`
+    : 'valor sob medida';
+
+  const limitText = Number.isFinite(selectedPackage.nfeLimitMonthly)
+    ? `ate ${selectedPackage.nfeLimitMonthly} NFe/mes`
+    : 'limite sob medida';
+
+  paymentSelectedPlanHint.textContent = `Plano ${selectedPackage.label}: ${priceText}, ${limitText}.`;
+}
+
+function applyPaymentOutline(data) {
+  if (!paymentOutlineHint) return;
+
+  const preapprovalDocUrl = String(data && data.preapprovalDocUrl ? data.preapprovalDocUrl : '').trim();
+  const bricksDocUrl = String(data && data.bricksDocUrl ? data.bricksDocUrl : '').trim();
+  const preapprovalRedirectUrl = String(data && data.preapprovalRedirectUrl ? data.preapprovalRedirectUrl : '').trim();
+  const bricksRedirectUrl = String(data && data.bricksRedirectUrl ? data.bricksRedirectUrl : '').trim();
+
+  if (paymentPreapprovalDocLink && preapprovalDocUrl) {
+    paymentPreapprovalDocLink.href = preapprovalDocUrl;
+  }
+
+  if (paymentBricksDocLink && bricksDocUrl) {
+    paymentBricksDocLink.href = bricksDocUrl;
+  }
+
+  if (btnOpenPreapprovalRedirect) {
+    btnOpenPreapprovalRedirect.disabled = !preapprovalRedirectUrl;
+    btnOpenPreapprovalRedirect.dataset.redirectUrl = preapprovalRedirectUrl;
+  }
+
+  if (btnOpenBricksRedirect) {
+    btnOpenBricksRedirect.disabled = !bricksRedirectUrl;
+    btnOpenBricksRedirect.dataset.redirectUrl = bricksRedirectUrl;
+  }
+
+  if (preapprovalRedirectUrl || bricksRedirectUrl) {
+    paymentOutlineHint.textContent = 'Links de redirecionamento configurados. Voce pode testar os botoes acima.';
+    paymentOutlineHint.classList.add('success');
+    return;
+  }
+
+  paymentOutlineHint.textContent = 'Esboco pronto: faltam apenas os links finais do Mercado Pago para redirecionamento.';
+  paymentOutlineHint.classList.remove('success');
+}
+
+async function loadPaymentOutline() {
+  const selectedPackage = getPackageConfig();
+  updatePaymentSummary();
+
+  if (
+    cachedPaymentOutlineData
+    && cachedPaymentOutlinePackageId === selectedPackage.id
+  ) {
+    applyPaymentOutline(cachedPaymentOutlineData);
+    return;
+  }
+
+  if (paymentOutlineHint) {
+    paymentOutlineHint.textContent = 'Carregando configuracao de pagamento...';
+    paymentOutlineHint.classList.remove('success');
+  }
+
+  try {
+    const response = await fetch(`/api/cadastro/payment-outline?packageId=${encodeURIComponent(selectedPackage.id)}`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Falha ao carregar configuracao de pagamento.');
+    }
+
+    cachedPaymentOutlinePackageId = selectedPackage.id;
+    cachedPaymentOutlineData = data;
+    applyPaymentOutline(data);
+  } catch (error) {
+    if (paymentOutlineHint) {
+      paymentOutlineHint.textContent = error.message;
+      paymentOutlineHint.classList.remove('success');
+    }
   }
 }
 
@@ -220,6 +329,14 @@ function validateStep0() {
 function validateCurrentStep() {
   if (currentStep === 0) return validateStep0();
   if (currentStep === 1) return Boolean(form.elements.packageId.value);
+  if (currentStep === 2 && paymentConfirmMock) {
+    if (!paymentConfirmMock.checked) {
+      paymentConfirmMock.setCustomValidity('Confirme a etapa de pagamento para concluir o cadastro.');
+      paymentConfirmMock.reportValidity();
+      paymentConfirmMock.setCustomValidity('');
+      return false;
+    }
+  }
   return true;
 }
 
@@ -236,6 +353,7 @@ function updatePackageSummary() {
     : 'valor sob consulta';
 
   selectedPackageHint.textContent = `Empresas ilimitadas + ${limitText} · ${priceText}. ${selectedPackage.salesPitch}`;
+  updatePaymentSummary();
 
   document.querySelectorAll('.package-card').forEach((card) => {
     const input = card.querySelector('input[name="packageId"]');
@@ -323,6 +441,7 @@ form.addEventListener('submit', async (event) => {
       email: document.getElementById('email').value.trim(),
       emailCode: document.getElementById('emailCode').value.trim(),
       senha: document.getElementById('senha').value,
+      paymentSketchAccepted: Boolean(paymentConfirmMock && paymentConfirmMock.checked),
     };
 
     const response = await fetch('/api/cadastro', {
@@ -366,6 +485,32 @@ if (packageGrid) {
   window.addEventListener('resize', updatePackageCarouselNavState);
 }
 
+if (btnOpenPreapprovalRedirect) {
+  btnOpenPreapprovalRedirect.addEventListener('click', () => {
+    const url = String(btnOpenPreapprovalRedirect.dataset.redirectUrl || '').trim();
+    if (!url) {
+      if (paymentOutlineHint) {
+        paymentOutlineHint.textContent = 'Link de assinatura ainda nao configurado no ambiente.';
+      }
+      return;
+    }
+    window.open(url, '_blank', 'noopener');
+  });
+}
+
+if (btnOpenBricksRedirect) {
+  btnOpenBricksRedirect.addEventListener('click', () => {
+    const url = String(btnOpenBricksRedirect.dataset.redirectUrl || '').trim();
+    if (!url) {
+      if (paymentOutlineHint) {
+        paymentOutlineHint.textContent = 'Link do Brick ainda nao configurado no ambiente.';
+      }
+      return;
+    }
+    window.open(url, '_blank', 'noopener');
+  });
+}
+
 document.getElementById('email').addEventListener('input', () => {
   emailVerificationCodeSent = false;
   emailVerified = false;
@@ -379,5 +524,6 @@ document.getElementById('cpf').addEventListener('input', (event) => {
 
 showStep(0);
 updatePackageSummary();
+updatePaymentSummary();
 window.addEventListener('load', resetPackageGridPosition);
 window.addEventListener('pageshow', resetPackageGridPosition);
