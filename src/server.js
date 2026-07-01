@@ -43,6 +43,7 @@ const MERCADO_PAGO_PREAPPROVAL_DOC_URL = 'https://www.mercadopago.com.br/develop
 const MERCADO_PAGO_BRICKS_DOC_URL = 'https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/card-payment-brick/introduction';
 const MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL = process.env.MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL || '';
 const MERCADO_PAGO_BRICKS_REDIRECT_URL = process.env.MERCADO_PAGO_BRICKS_REDIRECT_URL || '';
+const CADASTRO_ALLOW_TEST_REUSE = String(process.env.CADASTRO_ALLOW_TEST_REUSE || '').trim().toLowerCase() === 'true';
 const emailVerificationStore = new Map();
 
 const upload = multer({
@@ -1000,6 +1001,23 @@ function ensureMercadoPagoConfigured() {
   }
 }
 
+function getMercadoPagoPublicBaseUrl() {
+  const explicitSuccessUrl = String(MERCADO_PAGO_SUCCESS_URL || '').trim();
+  const explicitBaseUrl = String(APP_BASE_URL || '').trim();
+
+  const explicitSuccessIsPublic = /^https?:\/\//i.test(explicitSuccessUrl) && !/localhost|127\.0\.0\.1/i.test(explicitSuccessUrl);
+  if (explicitSuccessIsPublic) {
+    return new URL(explicitSuccessUrl).origin;
+  }
+
+  const webhookIsPublic = /^https?:\/\//i.test(MERCADO_PAGO_WEBHOOK_URL) && !/localhost|127\.0\.0\.1/i.test(MERCADO_PAGO_WEBHOOK_URL);
+  if (webhookIsPublic) {
+    return new URL(MERCADO_PAGO_WEBHOOK_URL).origin;
+  }
+
+  return explicitBaseUrl;
+}
+
 async function mercadoPagoRequest(endpoint, options = {}) {
   ensureMercadoPagoConfigured();
 
@@ -1040,11 +1058,89 @@ function ensureBillingState(user) {
 function parseExternalReference(value) {
   const source = String(value || '');
   const parts = source.split(':');
-  if (parts.length < 4) return { userId: '', packageId: '' };
+  if (parts[0] === 'signup' && parts.length >= 4) {
+    return {
+      flow: 'signup',
+      userId: '',
+      packageId: parts[2] || '',
+    };
+  }
+  if (parts.length < 4) return { flow: '', userId: '', packageId: '' };
   return {
+    flow: 'user',
     userId: parts[1] || '',
     packageId: parts[3] || '',
   };
+}
+
+function buildSignupExternalReference(packageId) {
+  return `signup:plan:${packageId}:ts:${Date.now()}`;
+}
+
+function buildSignupBackUrls() {
+  const cadastroUrl = new URL('/cadastro', getMercadoPagoPublicBaseUrl());
+  return {
+    success: `${cadastroUrl.toString()}?payment=approved`,
+    pending: `${cadastroUrl.toString()}?payment=pending`,
+    failure: `${cadastroUrl.toString()}?payment=failure`,
+  };
+}
+
+function canReuseSignupIdentityForTesting(email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!CADASTRO_ALLOW_TEST_REUSE) return false;
+
+  const usingMercadoPagoSandbox = String(MERCADO_PAGO_ACCESS_TOKEN || '').trim().startsWith('TEST-');
+  // Excecao temporaria para acelerar os testes locais de cadastro/pagamento.
+  // Remover esta allowlist quando o fluxo voltar a exigir unicidade estrita de e-mail.
+  const explicitAllowedEmails = [
+    'mateus_moreira_te@hotmail.com',
+  ];
+  const isTestLikeEmail = normalizedEmail.includes('+teste')
+    || normalizedEmail.includes('+sandbox')
+    || normalizedEmail.includes('teste')
+    || normalizedEmail.includes('sandbox');
+
+  return usingMercadoPagoSandbox && (isTestLikeEmail || explicitAllowedEmails.includes(normalizedEmail));
+}
+
+async function validateSignupPayment({ paymentId, externalReference, packageId, email, cpf }) {
+  const normalizedPaymentId = String(paymentId || '').trim();
+  const normalizedExternalReference = String(externalReference || '').trim();
+
+  if (!normalizedPaymentId || !normalizedExternalReference) {
+    throw new Error('Realize o pagamento no Mercado Pago antes de concluir o cadastro.');
+  }
+
+  const paymentData = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(normalizedPaymentId)}`);
+  if (String(paymentData.status || '').toLowerCase() !== 'approved') {
+    throw new Error('O pagamento ainda nao foi aprovado pelo Mercado Pago.');
+  }
+
+  if (String(paymentData.external_reference || '').trim() !== normalizedExternalReference) {
+    throw new Error('A referencia do pagamento nao corresponde a esta tentativa de cadastro.');
+  }
+
+  const metadata = paymentData.metadata && typeof paymentData.metadata === 'object'
+    ? paymentData.metadata
+    : {};
+
+  const metadataPackageId = normalizePackageId(metadata.packageId);
+  if (metadataPackageId && metadataPackageId !== packageId) {
+    throw new Error('O plano pago nao corresponde ao plano selecionado no cadastro.');
+  }
+
+  const payerEmail = String(paymentData.payer && paymentData.payer.email ? paymentData.payer.email : metadata.signupEmail || '').trim().toLowerCase();
+  if (payerEmail && payerEmail !== String(email || '').trim().toLowerCase()) {
+    throw new Error('O e-mail do pagamento nao corresponde ao e-mail informado no cadastro.');
+  }
+
+  const metadataCpf = normalizeDigits(metadata.signupCpf || '');
+  if (metadataCpf && metadataCpf !== normalizeDigits(cpf)) {
+    throw new Error('O CPF do pagamento nao corresponde ao CPF informado no cadastro.');
+  }
+
+  return paymentData;
 }
 
 function upsertPaymentTransaction(billing, paymentData) {
@@ -1409,6 +1505,7 @@ app.get('/api/cadastro/payment-outline', async (req, res) => {
       bricksDocUrl: MERCADO_PAGO_BRICKS_DOC_URL,
       preapprovalRedirectUrl: MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL,
       bricksRedirectUrl: MERCADO_PAGO_BRICKS_REDIRECT_URL,
+      checkoutReady: Boolean(String(MERCADO_PAGO_ACCESS_TOKEN || '').trim()),
       redirectLinksConfigured: Boolean(
         String(MERCADO_PAGO_PREAPPROVAL_REDIRECT_URL || '').trim()
         || String(MERCADO_PAGO_BRICKS_REDIRECT_URL || '').trim()
@@ -1416,6 +1513,73 @@ app.get('/api/cadastro/payment-outline', async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Falha ao montar esboco de pagamento.' });
+  }
+});
+
+app.post('/api/cadastro/mercado-pago/checkout', async (req, res) => {
+  try {
+    const packageId = normalizePackageId(req.body && req.body.packageId);
+    const selectedPackage = PACKAGE_OPTIONS[packageId];
+    const nomeUsuario = String(req.body && req.body.nomeUsuario ? req.body.nomeUsuario : '').trim();
+    const email = String(req.body && req.body.email ? req.body.email : '').trim().toLowerCase();
+    const cpf = normalizeDigits(req.body && req.body.cpf ? req.body.cpf : '');
+
+    if (!selectedPackage) {
+      return res.status(400).json({ error: 'Selecione um plano valido.' });
+    }
+
+    if (selectedPackage.requiresContact || !Number.isFinite(selectedPackage.monthlyPrice)) {
+      return res.status(400).json({ error: 'Este plano nao usa checkout automatico.' });
+    }
+
+    if (!nomeUsuario || !email || cpf.length !== 11) {
+      return res.status(400).json({ error: 'Informe nome, e-mail e CPF validos antes de abrir o checkout.' });
+    }
+
+    const externalReference = buildSignupExternalReference(selectedPackage.id);
+    const backUrls = buildSignupBackUrls();
+    const displayLimit = Number.isFinite(selectedPackage.nfeLimitMonthly)
+      ? selectedPackage.nfeLimitMonthly
+      : 'sob medida';
+
+    const preference = await mercadoPagoRequest('/checkout/preferences', {
+      method: 'POST',
+      body: {
+        items: [
+          {
+            id: `cadastro-plano-${selectedPackage.id}`,
+            title: `Plano ${selectedPackage.label} - ate ${displayLimit} notas/mes`,
+            description: `Primeira cobranca do cadastro Emil NotasXML`,
+            quantity: 1,
+            currency_id: 'BRL',
+            unit_price: Number(selectedPackage.monthlyPrice),
+          },
+        ],
+        payer: {
+          email,
+          name: nomeUsuario,
+        },
+        external_reference: externalReference,
+        notification_url: MERCADO_PAGO_WEBHOOK_URL,
+        back_urls: backUrls,
+        auto_return: 'approved',
+        metadata: {
+          flow: 'signup',
+          packageId: selectedPackage.id,
+          signupEmail: email,
+          signupCpf: cpf,
+        },
+      },
+    });
+
+    return res.json({
+      preferenceId: preference.id,
+      initPoint: preference.init_point,
+      sandboxInitPoint: preference.sandbox_init_point,
+      externalReference,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Falha ao iniciar checkout do cadastro.' });
   }
 });
 
@@ -1428,6 +1592,8 @@ app.post('/api/cadastro', async (req, res) => {
         email,
         emailCode,
         senha,
+        paymentId,
+        paymentExternalReference,
       } = req.body;
 
       const selectedPackage = PACKAGE_OPTIONS[normalizePackageId(packageId)];
@@ -1455,21 +1621,47 @@ app.post('/api/cadastro', async (req, res) => {
         return res.status(400).json({ error: 'Valide o codigo de e-mail antes de concluir o cadastro.' });
       }
 
+      if (!selectedPackage.requiresContact && Number.isFinite(selectedPackage.monthlyPrice)) {
+        await validateSignupPayment({
+          paymentId,
+          externalReference: paymentExternalReference,
+          packageId: selectedPackage.id,
+          email: normalizedEmail,
+          cpf: normalizedCpf,
+        });
+      }
+
       const registry = await readCompanyRegistry();
 
-      if (registry.users.some((user) => String(user.email || '').trim().toLowerCase() === normalizedEmail)) {
+      const existingUserByEmail = registry.users.find(
+        (user) => String(user.email || '').trim().toLowerCase() === normalizedEmail
+      );
+      const existingUserByCpf = registry.users.find(
+        (user) => normalizeDigits(user.cpf) === normalizedCpf
+      );
+
+      const reusableExistingUser = existingUserByEmail || existingUserByCpf;
+      const allowReuseForTesting = reusableExistingUser && canReuseSignupIdentityForTesting(normalizedEmail);
+
+      if (existingUserByEmail && !allowReuseForTesting) {
         return res.status(409).json({ error: 'E-mail ja cadastrado.' });
       }
 
-      if (registry.users.some((user) => normalizeDigits(user.cpf) === normalizedCpf)) {
+      if (existingUserByCpf && !allowReuseForTesting) {
         return res.status(409).json({ error: 'CPF ja cadastrado.' });
       }
 
-      const userId = uuidv4();
       const now = new Date().toISOString();
 
-      const newUser = {
-        id: userId,
+      const targetUser = reusableExistingUser || {
+        id: uuidv4(),
+        username: normalizedEmail,
+        companyIds: [],
+        active: true,
+        createdAt: now,
+      };
+
+      Object.assign(targetUser, {
         name: String(nomeUsuario || '').trim(),
         username: normalizedEmail,
         email: normalizedEmail,
@@ -1478,18 +1670,27 @@ app.post('/api/cadastro', async (req, res) => {
         password: String(senha || ''),
         accessLevel: 'master',
         package: selectedPackage,
-        companyIds: [],
         active: true,
-        createdAt: now,
-      };
+        createdAt: targetUser.createdAt || now,
+        updatedAt: now,
+      });
 
-      registry.users.push(newUser);
+      if (!Array.isArray(targetUser.companyIds)) {
+        targetUser.companyIds = [];
+      }
+
+      if (!reusableExistingUser) {
+        registry.users.push(targetUser);
+      }
+
       await writeCompanyRegistry(registry);
       emailVerificationStore.delete(normalizedEmail);
 
       return res.status(201).json({
         ok: true,
-        message: 'Cadastro realizado com sucesso!',
+        message: allowReuseForTesting
+          ? 'Cadastro de teste atualizado com sucesso!'
+          : 'Cadastro realizado com sucesso!',
       });
     } catch (error) {
       console.error('Erro no cadastro:', error);

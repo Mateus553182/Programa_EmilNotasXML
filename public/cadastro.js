@@ -56,20 +56,30 @@ const packageGrid = document.getElementById('packageGrid');
 const paymentSelectedPlan = document.getElementById('paymentSelectedPlan');
 const paymentSelectedPlanHint = document.getElementById('paymentSelectedPlanHint');
 const paymentOutlineHint = document.getElementById('paymentOutlineHint');
+const paymentStatusLine = document.getElementById('paymentStatusLine');
 const paymentConfirmMock = document.getElementById('paymentConfirmMock');
+const paymentConfirmLine = document.querySelector('.payment-confirm-line');
 const paymentPreapprovalDocLink = document.getElementById('paymentPreapprovalDocLink');
 const paymentBricksDocLink = document.getElementById('paymentBricksDocLink');
-const btnOpenPreapprovalRedirect = document.getElementById('btnOpenPreapprovalRedirect');
-const btnOpenBricksRedirect = document.getElementById('btnOpenBricksRedirect');
+const btnStartPayment = document.getElementById('btnStartPayment');
 
 const emailCodeHint = document.getElementById('emailCodeHint');
 const message = document.getElementById('cadastroMessage');
+
+const SIGNUP_DRAFT_KEY = 'emil_signup_draft';
+const SIGNUP_PAYMENT_KEY = 'emil_signup_payment';
 
 let currentStep = 0;
 let emailVerificationCodeSent = false;
 let emailVerified = false;
 let cachedPaymentOutlinePackageId = '';
 let cachedPaymentOutlineData = null;
+let paymentState = {
+  status: '',
+  paymentId: '',
+  externalReference: '',
+  preferenceId: '',
+};
 
 function getPackageConfig() {
   const packageId = form.elements.packageId.value || 'basico';
@@ -145,6 +155,163 @@ function formatMoney(value) {
   return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function isAutomaticCheckoutPackage(selectedPackage = getPackageConfig()) {
+  return !selectedPackage.requiresContact && Number.isFinite(selectedPackage.monthlyPrice);
+}
+
+function isPaymentApproved() {
+  return String(paymentState.status || '').toLowerCase() === 'approved';
+}
+
+function persistPaymentState() {
+  localStorage.setItem(SIGNUP_PAYMENT_KEY, JSON.stringify(paymentState));
+}
+
+function saveSignupDraft() {
+  const draft = {
+    nomeUsuario: document.getElementById('nomeUsuario').value.trim(),
+    cpf: document.getElementById('cpf').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    emailCode: document.getElementById('emailCode').value.trim(),
+    senha: document.getElementById('senha').value,
+    confirmarSenha: document.getElementById('confirmarSenha').value,
+    packageId: getPackageConfig().id,
+    emailVerificationCodeSent,
+    emailVerified,
+  };
+  localStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify(draft));
+}
+
+function restoreSignupDraft() {
+  const raw = localStorage.getItem(SIGNUP_DRAFT_KEY);
+  if (!raw) return;
+
+  try {
+    const draft = JSON.parse(raw);
+    if (draft.nomeUsuario) document.getElementById('nomeUsuario').value = draft.nomeUsuario;
+    if (draft.cpf) document.getElementById('cpf').value = draft.cpf;
+    if (draft.email) document.getElementById('email').value = draft.email;
+    if (draft.emailCode) document.getElementById('emailCode').value = draft.emailCode;
+    if (draft.senha) document.getElementById('senha').value = draft.senha;
+    if (draft.confirmarSenha) document.getElementById('confirmarSenha').value = draft.confirmarSenha;
+    if (draft.packageId && form.elements.packageId) {
+      const packageInput = form.querySelector(`input[name="packageId"][value="${draft.packageId}"]`);
+      if (packageInput) packageInput.checked = true;
+    }
+    emailVerificationCodeSent = Boolean(draft.emailVerificationCodeSent);
+    emailVerified = Boolean(draft.emailVerified);
+  } catch (error) {
+    localStorage.removeItem(SIGNUP_DRAFT_KEY);
+  }
+}
+
+function restorePaymentState() {
+  const raw = localStorage.getItem(SIGNUP_PAYMENT_KEY);
+  if (!raw) return;
+
+  try {
+    const parsed = JSON.parse(raw);
+    paymentState = {
+      status: String(parsed.status || ''),
+      paymentId: String(parsed.paymentId || ''),
+      externalReference: String(parsed.externalReference || ''),
+      preferenceId: String(parsed.preferenceId || ''),
+    };
+  } catch (error) {
+    localStorage.removeItem(SIGNUP_PAYMENT_KEY);
+  }
+}
+
+function resetPaymentState() {
+  paymentState = {
+    status: '',
+    paymentId: '',
+    externalReference: '',
+    preferenceId: '',
+  };
+  localStorage.removeItem(SIGNUP_PAYMENT_KEY);
+  updatePaymentStatusUI();
+}
+
+function updatePaymentStatusUI() {
+  const selectedPackage = getPackageConfig();
+
+  if (paymentConfirmLine) {
+    paymentConfirmLine.classList.toggle('hidden', isAutomaticCheckoutPackage(selectedPackage));
+  }
+
+  if (btnStartPayment) {
+    btnStartPayment.classList.toggle('hidden', !isAutomaticCheckoutPackage(selectedPackage));
+  }
+
+  if (!paymentStatusLine) return;
+
+  if (!isAutomaticCheckoutPackage(selectedPackage)) {
+    paymentStatusLine.textContent = 'Plano sob consulta: siga com o cadastro e o pagamento sera tratado comercialmente.';
+    paymentStatusLine.classList.remove('success');
+    return;
+  }
+
+  const status = String(paymentState.status || '').toLowerCase();
+  if (status === 'approved') {
+    paymentStatusLine.textContent = 'Pagamento aprovado no Mercado Pago. Agora voce ja pode concluir o cadastro.';
+    paymentStatusLine.classList.add('success');
+    return;
+  }
+
+  if (status === 'pending' || status === 'in_process') {
+    paymentStatusLine.textContent = 'Pagamento ainda pendente. Aguarde a confirmacao ou tente novamente.';
+    paymentStatusLine.classList.remove('success');
+    return;
+  }
+
+  if (status) {
+    paymentStatusLine.textContent = `Pagamento com status ${status}. Se necessario, gere um novo checkout.`;
+    paymentStatusLine.classList.remove('success');
+    return;
+  }
+
+  paymentStatusLine.textContent = 'Pagamento ainda nao iniciado.';
+  paymentStatusLine.classList.remove('success');
+}
+
+function parsePaymentReturnParams() {
+  const url = new URL(window.location.href);
+  const paymentId = String(url.searchParams.get('payment_id') || url.searchParams.get('collection_id') || '').trim();
+  const externalReference = String(url.searchParams.get('external_reference') || '').trim();
+  const rawStatus = String(
+    url.searchParams.get('collection_status')
+    || url.searchParams.get('status')
+    || url.searchParams.get('payment')
+    || ''
+  ).trim().toLowerCase();
+
+  if (!rawStatus && !paymentId && !externalReference) return;
+
+  const normalizedStatus = rawStatus === 'success' ? 'approved' : rawStatus;
+  paymentState = {
+    ...paymentState,
+    status: normalizedStatus,
+    paymentId,
+    externalReference,
+  };
+  persistPaymentState();
+  updatePaymentStatusUI();
+
+  url.searchParams.delete('collection_id');
+  url.searchParams.delete('collection_status');
+  url.searchParams.delete('payment_id');
+  url.searchParams.delete('status');
+  url.searchParams.delete('external_reference');
+  url.searchParams.delete('merchant_order_id');
+  url.searchParams.delete('preference_id');
+  url.searchParams.delete('site_id');
+  url.searchParams.delete('processing_mode');
+  url.searchParams.delete('merchant_account_id');
+  url.searchParams.delete('payment');
+  window.history.replaceState({}, document.title, url.pathname + url.search);
+}
+
 function updatePaymentSummary() {
   const selectedPackage = getPackageConfig();
   if (!paymentSelectedPlan || !paymentSelectedPlanHint) return;
@@ -160,6 +327,16 @@ function updatePaymentSummary() {
     : 'limite sob medida';
 
   paymentSelectedPlanHint.textContent = `Plano ${selectedPackage.label}: ${priceText}, ${limitText}.`;
+
+  if (paymentConfirmLine) {
+    paymentConfirmLine.classList.toggle('hidden', isAutomaticCheckoutPackage(selectedPackage));
+  }
+
+  if (paymentConfirmMock) {
+    paymentConfirmMock.checked = false;
+  }
+
+  updatePaymentStatusUI();
 }
 
 function applyPaymentOutline(data) {
@@ -178,23 +355,19 @@ function applyPaymentOutline(data) {
     paymentBricksDocLink.href = bricksDocUrl;
   }
 
-  if (btnOpenPreapprovalRedirect) {
-    btnOpenPreapprovalRedirect.disabled = !preapprovalRedirectUrl;
-    btnOpenPreapprovalRedirect.dataset.redirectUrl = preapprovalRedirectUrl;
-  }
-
-  if (btnOpenBricksRedirect) {
-    btnOpenBricksRedirect.disabled = !bricksRedirectUrl;
-    btnOpenBricksRedirect.dataset.redirectUrl = bricksRedirectUrl;
-  }
-
-  if (preapprovalRedirectUrl || bricksRedirectUrl) {
-    paymentOutlineHint.textContent = 'Links de redirecionamento configurados. Voce pode testar os botoes acima.';
+  if (data && data.checkoutReady) {
+    paymentOutlineHint.textContent = 'Checkout do Mercado Pago pronto para teste no sandbox.';
     paymentOutlineHint.classList.add('success');
     return;
   }
 
-  paymentOutlineHint.textContent = 'Esboco pronto: faltam apenas os links finais do Mercado Pago para redirecionamento.';
+  if (preapprovalRedirectUrl || bricksRedirectUrl) {
+    paymentOutlineHint.textContent = 'Ha links auxiliares de redirecionamento configurados, mas o checkout do cadastro sera criado via API.';
+    paymentOutlineHint.classList.add('success');
+    return;
+  }
+
+  paymentOutlineHint.textContent = 'Credenciais do Mercado Pago ainda nao foram configuradas no ambiente.';
   paymentOutlineHint.classList.remove('success');
 }
 
@@ -329,9 +502,22 @@ function validateStep0() {
 function validateCurrentStep() {
   if (currentStep === 0) return validateStep0();
   if (currentStep === 1) return Boolean(form.elements.packageId.value);
-  if (currentStep === 2 && paymentConfirmMock) {
-    if (!paymentConfirmMock.checked) {
-      paymentConfirmMock.setCustomValidity('Confirme a etapa de pagamento para concluir o cadastro.');
+  if (currentStep === 2) {
+    const selectedPackage = getPackageConfig();
+
+    if (isAutomaticCheckoutPackage(selectedPackage)) {
+      if (!isPaymentApproved()) {
+        if (paymentOutlineHint) {
+          paymentOutlineHint.textContent = 'Antes de concluir, abra o checkout do Mercado Pago e finalize um pagamento aprovado.';
+          paymentOutlineHint.classList.remove('success');
+        }
+        return false;
+      }
+      return true;
+    }
+
+    if (paymentConfirmMock && !paymentConfirmMock.checked) {
+      paymentConfirmMock.setCustomValidity('Confirme que este plano sera tratado comercialmente para concluir o cadastro.');
       paymentConfirmMock.reportValidity();
       paymentConfirmMock.setCustomValidity('');
       return false;
@@ -442,6 +628,8 @@ form.addEventListener('submit', async (event) => {
       emailCode: document.getElementById('emailCode').value.trim(),
       senha: document.getElementById('senha').value,
       paymentSketchAccepted: Boolean(paymentConfirmMock && paymentConfirmMock.checked),
+      paymentId: paymentState.paymentId,
+      paymentExternalReference: paymentState.externalReference,
     };
 
     const response = await fetch('/api/cadastro', {
@@ -457,6 +645,8 @@ form.addEventListener('submit', async (event) => {
 
     message.style.color = '#2e9e6a';
     message.textContent = `${data.message || 'Cadastro realizado com sucesso!'} Redirecionando...`;
+    localStorage.removeItem(SIGNUP_DRAFT_KEY);
+    localStorage.removeItem(SIGNUP_PAYMENT_KEY);
     setTimeout(() => {
       window.location.href = '/acesso?forceLogin=1';
     }, 2500);
@@ -469,7 +659,11 @@ form.addEventListener('submit', async (event) => {
 });
 
 Array.from(form.elements.packageId).forEach((input) => {
-  input.addEventListener('change', updatePackageSummary);
+  input.addEventListener('change', () => {
+    resetPaymentState();
+    updatePackageSummary();
+    saveSignupDraft();
+  });
 });
 
 if (btnPackagePrev) {
@@ -485,45 +679,93 @@ if (packageGrid) {
   window.addEventListener('resize', updatePackageCarouselNavState);
 }
 
-if (btnOpenPreapprovalRedirect) {
-  btnOpenPreapprovalRedirect.addEventListener('click', () => {
-    const url = String(btnOpenPreapprovalRedirect.dataset.redirectUrl || '').trim();
-    if (!url) {
-      if (paymentOutlineHint) {
-        paymentOutlineHint.textContent = 'Link de assinatura ainda nao configurado no ambiente.';
-      }
-      return;
-    }
-    window.open(url, '_blank', 'noopener');
-  });
-}
+if (btnStartPayment) {
+  btnStartPayment.addEventListener('click', async () => {
+    message.textContent = '';
 
-if (btnOpenBricksRedirect) {
-  btnOpenBricksRedirect.addEventListener('click', () => {
-    const url = String(btnOpenBricksRedirect.dataset.redirectUrl || '').trim();
-    if (!url) {
-      if (paymentOutlineHint) {
-        paymentOutlineHint.textContent = 'Link do Brick ainda nao configurado no ambiente.';
-      }
+    if (!validateStep0()) return;
+
+    const selectedPackage = getPackageConfig();
+    if (!isAutomaticCheckoutPackage(selectedPackage)) {
+      updatePaymentStatusUI();
       return;
     }
-    window.open(url, '_blank', 'noopener');
+
+    btnStartPayment.disabled = true;
+    btnStartPayment.textContent = 'Gerando checkout...';
+
+    try {
+      saveSignupDraft();
+
+      const payload = {
+        packageId: selectedPackage.id,
+        nomeUsuario: document.getElementById('nomeUsuario').value.trim(),
+        cpf: document.getElementById('cpf').value.trim(),
+        email: document.getElementById('email').value.trim(),
+      };
+
+      const response = await fetch('/api/cadastro/mercado-pago/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Falha ao iniciar checkout do Mercado Pago.');
+      }
+
+      paymentState = {
+        status: 'created',
+        paymentId: '',
+        externalReference: String(data.externalReference || ''),
+        preferenceId: String(data.preferenceId || ''),
+      };
+      persistPaymentState();
+
+      const checkoutUrl = data.sandboxInitPoint || data.initPoint;
+      if (!checkoutUrl) {
+        throw new Error('Checkout do Mercado Pago nao retornou uma URL valida.');
+      }
+
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      if (paymentOutlineHint) {
+        paymentOutlineHint.textContent = error.message;
+        paymentOutlineHint.classList.remove('success');
+      }
+      btnStartPayment.disabled = false;
+      btnStartPayment.textContent = 'Pagar com Mercado Pago';
+    }
   });
 }
 
 document.getElementById('email').addEventListener('input', () => {
   emailVerificationCodeSent = false;
   emailVerified = false;
+  resetPaymentState();
   emailCodeHint.textContent = 'Solicite o codigo para validar o e-mail antes de prosseguir.';
   emailCodeHint.classList.remove('success');
+  saveSignupDraft();
 });
 
 document.getElementById('cpf').addEventListener('input', (event) => {
   event.target.value = formatCpf(event.target.value);
+  resetPaymentState();
+  saveSignupDraft();
 });
 
+document.getElementById('nomeUsuario').addEventListener('input', saveSignupDraft);
+document.getElementById('emailCode').addEventListener('input', saveSignupDraft);
+document.getElementById('senha').addEventListener('input', saveSignupDraft);
+document.getElementById('confirmarSenha').addEventListener('input', saveSignupDraft);
+
+restoreSignupDraft();
+restorePaymentState();
+parsePaymentReturnParams();
 showStep(0);
 updatePackageSummary();
 updatePaymentSummary();
+updatePaymentStatusUI();
 window.addEventListener('load', resetPackageGridPosition);
 window.addEventListener('pageshow', resetPackageGridPosition);

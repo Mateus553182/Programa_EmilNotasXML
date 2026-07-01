@@ -124,8 +124,8 @@
           </fieldset>
 
           <fieldset class="wizard-step hidden" id="step3">
-            <legend>Pagamento (esboco)</legend>
-            <p class="step-hint">Fluxo sugerido: cobrar a primeira mensalidade e, em seguida, criar a assinatura recorrente no Mercado Pago.</p>
+            <legend>Pagamento</legend>
+            <p class="step-hint">Para planos com cobranca automatica, voce sera redirecionado ao Mercado Pago e voltara para concluir o cadastro apenas depois da aprovacao.</p>
 
             <div class="codigo-empresa-box compact payment-summary-box">
               <span>Resumo para cobranca:</span>
@@ -135,23 +135,23 @@
 
             <div class="payment-outline-grid">
               <article class="payment-outline-card">
-                <h3>1) Assinatura (Preapproval)</h3>
-                <p>Endpoint recomendado para criar assinatura recorrente:</p>
-                <a id="paymentPreapprovalDocLink" href="https://www.mercadopago.com.br/developers/pt/reference/online-payments/subscriptions/create-preapproval/post" target="_blank" rel="noreferrer">Documentacao oficial de Preapproval</a>
-                <button type="button" id="btnOpenPreapprovalRedirect" class="secondary">Abrir link de assinatura (quando configurado)</button>
+                <h3>1) Checkout do cadastro</h3>
+                <p>Use o botao abaixo para abrir o checkout sandbox do Mercado Pago com os dados do plano selecionado.</p>
+                <button type="button" id="btnStartPayment">Pagar com Mercado Pago</button>
+                <p id="paymentStatusLine" class="field-hint">Pagamento ainda nao iniciado.</p>
               </article>
 
               <article class="payment-outline-card">
-                <h3>2) Checkout Bricks (cartao)</h3>
-                <p>Brick para coletar cartao com seguranca e cobrar primeira mensalidade:</p>
+                <h3>2) Referencias da integracao</h3>
+                <p>Links uteis para evoluir depois para recorrencia e coleta de cartao dentro do app:</p>
+                <a id="paymentPreapprovalDocLink" href="https://www.mercadopago.com.br/developers/pt/reference/online-payments/subscriptions/create-preapproval/post" target="_blank" rel="noreferrer">Documentacao oficial de Preapproval</a>
                 <a id="paymentBricksDocLink" href="https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/card-payment-brick/introduction" target="_blank" rel="noreferrer">Documentacao Card Payment Brick</a>
-                <button type="button" id="btnOpenBricksRedirect" class="secondary">Abrir link do Brick (quando configurado)</button>
               </article>
             </div>
 
             <label class="payment-confirm-line" for="paymentConfirmMock">
               <input id="paymentConfirmMock" type="checkbox" />
-              Entendi que esta etapa e um esboco e os links de redirecionamento serao configurados depois.
+              Entendi que este plano exige contato comercial e o pagamento sera combinado fora do checkout automatico.
             </label>
 
             <p id="paymentOutlineHint" class="field-hint">Carregando configuracao de pagamento...</p>
