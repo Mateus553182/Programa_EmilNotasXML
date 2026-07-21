@@ -38,6 +38,7 @@ const PACKAGE_OPTIONS = {
 };
 
 const form = document.getElementById('cadastroForm');
+form.noValidate = true;
 const steps = document.querySelectorAll('.wizard-step');
 const stepIndicators = document.querySelectorAll('.step');
 const stepLines = document.querySelectorAll('.step-line');
@@ -68,6 +69,7 @@ const message = document.getElementById('cadastroMessage');
 
 const SIGNUP_DRAFT_KEY = 'emil_signup_draft';
 const SIGNUP_PAYMENT_KEY = 'emil_signup_payment';
+const RESET_CACHE_PARAM = 'resetCache';
 
 let currentStep = 0;
 let emailVerificationCodeSent = false;
@@ -233,6 +235,43 @@ function resetPaymentState() {
   updatePaymentStatusUI();
 }
 
+function shouldResetSignupCache() {
+  return new URL(window.location.href).searchParams.get(RESET_CACHE_PARAM) === '1';
+}
+
+async function clearSignupCache() {
+  localStorage.removeItem(SIGNUP_DRAFT_KEY);
+  localStorage.removeItem(SIGNUP_PAYMENT_KEY);
+  cachedPaymentOutlinePackageId = '';
+  cachedPaymentOutlineData = null;
+  emailVerificationCodeSent = false;
+  emailVerified = false;
+  paymentState = {
+    status: '',
+    paymentId: '',
+    externalReference: '',
+    preferenceId: '',
+  };
+
+  if (window.caches && typeof window.caches.keys === 'function') {
+    try {
+      const cacheKeys = await window.caches.keys();
+      await Promise.all(cacheKeys.map((cacheKey) => window.caches.delete(cacheKey)));
+    } catch (error) {
+      // Ignore cache deletion failures during a local reset.
+    }
+  }
+
+  if (navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    } catch (error) {
+      // Ignore service worker reset failures during a local reset.
+    }
+  }
+}
+
 function updatePaymentStatusUI() {
   const selectedPackage = getPackageConfig();
 
@@ -278,7 +317,6 @@ function updatePaymentStatusUI() {
 function parsePaymentReturnParams() {
   const url = new URL(window.location.href);
   const paymentId = String(url.searchParams.get('payment_id') || url.searchParams.get('collection_id') || '').trim();
-  const externalReference = String(url.searchParams.get('external_reference') || '').trim();
   const rawStatus = String(
     url.searchParams.get('collection_status')
     || url.searchParams.get('status')
@@ -286,14 +324,13 @@ function parsePaymentReturnParams() {
     || ''
   ).trim().toLowerCase();
 
-  if (!rawStatus && !paymentId && !externalReference) return;
+  if (!rawStatus && !paymentId) return;
 
   const normalizedStatus = rawStatus === 'success' ? 'approved' : rawStatus;
   paymentState = {
     ...paymentState,
     status: normalizedStatus,
     paymentId,
-    externalReference,
   };
   persistPaymentState();
   updatePaymentStatusUI();
@@ -760,12 +797,25 @@ document.getElementById('emailCode').addEventListener('input', saveSignupDraft);
 document.getElementById('senha').addEventListener('input', saveSignupDraft);
 document.getElementById('confirmarSenha').addEventListener('input', saveSignupDraft);
 
-restoreSignupDraft();
-restorePaymentState();
-parsePaymentReturnParams();
-showStep(0);
-updatePackageSummary();
-updatePaymentSummary();
-updatePaymentStatusUI();
-window.addEventListener('load', resetPackageGridPosition);
-window.addEventListener('pageshow', resetPackageGridPosition);
+async function initializeSignupScreen() {
+  if (shouldResetSignupCache()) {
+    await clearSignupCache();
+    window.location.replace('/cadastro');
+    return;
+  }
+
+  restoreSignupDraft();
+  restorePaymentState();
+  parsePaymentReturnParams();
+  if (isAutomaticCheckoutPackage(getPackageConfig()) && paymentState.status) {
+    currentStep = 2;
+  }
+  showStep(currentStep);
+  updatePackageSummary();
+  updatePaymentSummary();
+  updatePaymentStatusUI();
+  window.addEventListener('load', resetPackageGridPosition);
+  window.addEventListener('pageshow', resetPackageGridPosition);
+}
+
+initializeSignupScreen();

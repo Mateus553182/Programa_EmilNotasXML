@@ -18,13 +18,113 @@
       "active": true,
       "createdAt": "2026-04-28T18:40:11.200Z",
       "certValidTo": "2026-12-31T23:59:59.000Z"
+    },
+    {
+      "id": "3f5abfa3-a371-4a55-9e26-3e64c1bdf1c8",
+      "code": "335299",
+      "kind": "secundaria",
+      "name": "BY BUS TRANSPORTES LTDA",
+      "cnpj": "69067031000166",
+      "address": {
+        "cep": "13803-010",
+        "street": "Rua Antônio Moreno Perez, Jardim Maria Beatriz",
+        "city": "Mogi Mirim",
+        "state": "SP"
+      },
+      "userIds": [
+        "user-teste-001"
+      ],
+      "masterUserId": "user-teste-001",
+      "active": true,
+      "createdAt": "2026-05-26T18:02:38.558Z"
+    },
+    {
+      "id": "c67b1c79-ba68-4ae3-9e3e-5adbcf529629",
+      "code": "378907",
+      "kind": "secundaria",
+      "name": "VIACAO LIMA E SILVA LTDA",
+      "cnpj": "07004424000416",
+      "address": {
+        "cep": "13486-338",
+        "street": "Rua Ângelo Santa Rosa, Jardim Celina",
+        "city": "Limeira",
+        "state": "SP"
+      },
+      "userIds": [
+        "user-teste-001"
+      ],
+      "masterUserId": "user-teste-001",
+      "active": true,
+      "createdAt": "2026-05-26T18:03:07.779Z"
+    },
+    {
+      "id": "8cafa07f-03f1-41e9-9a3f-1e7c3101a866",
+      "code": "877612",
+      "kind": "secundaria",
+      "name": "VESPER REPARACAO MECANICA E COMERCIO DE PECAS LTD",
+      "cnpj": "29866748000153",
+      "address": {
+        "cep": "13486-330",
+        "street": "Rua Jacob Krambeck, Jardim Boa Vista",
+        "city": "Limeira",
+        "state": "SP"
+      },
+      "userIds": [
+        "user-teste-001"
+      ],
+      "masterUserId": "user-teste-001",
+      "active": true,
+      "createdAt": "2026-05-26T18:04:25.179Z"
+    },
+    {
+      "id": "4ff1ae12-5412-4d9f-b4cb-0b331a6b27df",
+      "code": "142819",
+      "kind": "secundaria",
+      "name": "TRANS NETTI TRANSPORTE E LOCACAO LTDA",
+      "cnpj": "04361392000175",
+      "address": {
+        "cep": "13347-636",
+        "street": "Rua Esmeralda Martini Paula, Comercial Vitória Martini",
+        "city": "Indaiatuba",
+        "state": "SP"
+      },
+      "userIds": [
+        "user-teste-001"
+      ],
+      "masterUserId": "user-teste-001",
+      "active": true,
+      "createdAt": "2026-05-26T18:05:11.065Z"
+    },
+    {
+      "id": "fbeb838c-1cce-4a86-909e-4d40a92e5c51",
+      "code": "209442",
+      "kind": "secundaria",
+      "name": "VESPER TRANSPORTES LTDA",
+      "cnpj": "00873594000145",
+      "address": {
+        "cep": "13486-338",
+        "street": "Rua Ângelo Santa Rosa, Jardim Celina",
+        "city": "Limeira",
+        "state": "SP"
+      },
+      "userIds": [
+        "user-teste-001"
+      ],
+      "masterUserId": "user-teste-001",
+      "active": true,
+      "createdAt": "2026-05-26T18:05:51.925Z"
     }
   ],
   "users": [
     {
       "active": true,
       "companyIds": [
-        "49cca245-9e11-4cc1-ae52-e84d0607d6a1"
+        "49cca245-9e11-4cc1-ae52-e84d0607d6a1",
+        "3f5abfa3-a371-4a55-9e26-3e64c1bdf1c8",
+        "c67b1c79-ba68-4ae3-9e3e-5adbcf529629",
+        "8cafa07f-03f1-41e9-9a3f-1e7c3101a866",
+        "4ff1ae12-5412-4d9f-b4cb-0b331a6b27df",
+        "fbeb838c-1cce-4a86-909e-4d40a92e5c51"
       ],
       "id": "user-teste-001",
       "name": "João Teste",

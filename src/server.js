@@ -1107,6 +1107,7 @@ function canReuseSignupIdentityForTesting(email) {
 async function validateSignupPayment({ paymentId, externalReference, packageId, email, cpf }) {
   const normalizedPaymentId = String(paymentId || '').trim();
   const normalizedExternalReference = String(externalReference || '').trim();
+  const usingMercadoPagoSandbox = String(MERCADO_PAGO_ACCESS_TOKEN || '').trim().startsWith('TEST-');
 
   if (!normalizedPaymentId || !normalizedExternalReference) {
     throw new Error('Realize o pagamento no Mercado Pago antes de concluir o cadastro.');
@@ -1131,12 +1132,12 @@ async function validateSignupPayment({ paymentId, externalReference, packageId, 
   }
 
   const payerEmail = String(paymentData.payer && paymentData.payer.email ? paymentData.payer.email : metadata.signupEmail || '').trim().toLowerCase();
-  if (payerEmail && payerEmail !== String(email || '').trim().toLowerCase()) {
+  if (!usingMercadoPagoSandbox && payerEmail && payerEmail !== String(email || '').trim().toLowerCase()) {
     throw new Error('O e-mail do pagamento nao corresponde ao e-mail informado no cadastro.');
   }
 
   const metadataCpf = normalizeDigits(metadata.signupCpf || '');
-  if (metadataCpf && metadataCpf !== normalizeDigits(cpf)) {
+  if (!usingMercadoPagoSandbox && metadataCpf && metadataCpf !== normalizeDigits(cpf)) {
     throw new Error('O CPF do pagamento nao corresponde ao CPF informado no cadastro.');
   }
 
@@ -1413,6 +1414,10 @@ app.post('/api/cadastro/email/send-code', async (req, res) => {
     if (result.mode === 'ethereal' && result.previewUrl) {
       response.previewUrl = result.previewUrl;
       response.message += ' Ambiente de teste detectado: abra o link de preview para visualizar o e-mail.';
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      response.devCode = code;
     }
 
     return res.json(response);

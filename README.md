@@ -1,133 +1,190 @@
 # Emil Notas XML
 
-Aplicacao para armazenamento e controle de XML de notas fiscais (NFe), com foco em uso web e base pronta para empacotar em APK.
+Aplicacao web (MVP) para cadastro de usuarios/empresas e gestao de XML de NFe.
 
-## O que este MVP faz
+## Resumo rapido
 
-- Upload de arquivos XML de NFe
-- Extracao automatica de dados principais (numero, serie, chave, CNPJ emitente, valor)
-- Listagem e filtros
-- Download do XML original
-- Exclusao de nota
-- Interface web responsiva
-- Suporte PWA (instalavel no navegador)
+O projeto cobre 3 frentes principais:
 
-## Stack
+1. Autenticacao e cadastro (com verificacao de e-mail e etapa de pagamento no Mercado Pago).
+2. Operacao fiscal (upload, leitura, filtro, download e exclusao de XML).
+3. Gestao administrativa (empresas, relatorios e tela de documentos fiscais).
 
-- Node.js + Express
-- Multer para upload
-- fast-xml-parser para leitura de XML
-- Frontend HTML/CSS/JS
+## Como rodar
 
-## Como executar
-
-1. Instale dependencias:
+1. Instalar dependencias:
 
 ```bash
 npm install
 ```
 
-2. Rode em desenvolvimento:
+2. Subir em dev (watch):
 
 ```bash
 npm run dev
 ```
 
-3. Abra no navegador:
+Ou em modo normal:
+
+```bash
+npm start
+```
+
+3. Acessar:
 
 ```text
 http://localhost:3310
 ```
 
-## Verificacao de e-mail no cadastro
+## Fluxo funcional (alto nivel)
 
-O cadastro usa envio real de e-mail para validar o usuario master.
+1. Usuario faz login ou cadastro.
+2. Cadastro valida e-mail e, para planos automaticos, exige pagamento aprovado.
+3. Usuario entra no dashboard e envia XML de NFe.
+4. Backend extrai metadados da NFe e grava:
+	 - arquivo XML em storage/xml/
+	 - metadados em storage/index.json
+5. Telas de consulta usam API para listar, filtrar, baixar e excluir notas.
 
-### SMTP real (recomendado)
+## Estrutura do projeto
 
-Defina estas variaveis de ambiente antes de iniciar a aplicacao:
+### Backend (src/)
 
-- `SMTP_HOST`: host do provedor SMTP
-- `SMTP_PORT`: porta SMTP (ex.: `587`)
-- `SMTP_SECURE`: `true` para TLS direto (porta 465), senao `false`
-- `SMTP_USER`: usuario da conta SMTP
-- `SMTP_PASS`: senha da conta SMTP
-- `SMTP_FROM` (opcional): remetente exibido no e-mail
-- `EMAIL_CODE_TTL_MS` (opcional): expiracao do codigo em ms (padrao: `600000`)
-- `EMAIL_ALLOW_ETHEREAL` (opcional, padrao `false`): habilita inbox de teste Ethereal
+- src/server.js
+	- Arquivo central da aplicacao (Express).
+	- Registra middlewares, rotas de autenticacao, cadastro, pagamento, empresas e notas.
+	- Faz validacoes de negocio (sessao, plano, pagamento aprovado, limite/uso etc).
 
-Exemplo PowerShell:
+- src/auth.js
+	- Leitura e escrita do registro de usuarios/empresas (storage/companies.json).
+	- Login por e-mail e senha.
+	- Gestao de sessao em memoria via token.
 
-```powershell
-$env:SMTP_HOST="smtp.seuprovedor.com"
-$env:SMTP_PORT="587"
-$env:SMTP_SECURE="false"
-$env:SMTP_USER="no-reply@seudominio.com"
-$env:SMTP_PASS="sua-senha-ou-app-password"
-$env:SMTP_FROM="Emil NotasXML <no-reply@seudominio.com>"
-npm start
-```
+- src/storage.js
+	- Persistencia de notas fiscais.
+	- Cria estrutura de storage, grava/consulta index.json e remove XML fisico.
 
-### Modo teste (opcional)
+- src/xml-parser.js
+	- Parser de NFe com fast-xml-parser.
+	- Extrai campos principais: chave, numero, serie, emissao, emitente/destinatario e valor total.
 
-Por padrao, sem SMTP configurado o envio e bloqueado com erro claro de configuracao.
+- src/email-service.js
+	- Envio de codigo de verificacao por SMTP ou Resend.
+	- Suporte a fallback de ambiente de teste.
 
-Para usar inbox de teste Ethereal, habilite:
+### Frontend (public/)
 
-```powershell
-$env:EMAIL_ALLOW_ETHEREAL="true"
-```
+Arquivos de pagina:
 
-Nesse modo, o endpoint de envio retorna `previewUrl` para visualizar o e-mail de teste.
+- public/login.html e public/acesso.html: entrada/autenticacao.
+- public/cadastro.html: wizard de cadastro (usuario, plano, pagamento).
+- public/dashboard.html: operacao principal de upload e consulta.
+- public/empresas.html: cadastro/edicao de empresa principal.
+- public/empresas-secundarias.html: gestao de empresas secundarias.
+- public/relatorios.html: paineis e consultas com filtros avancados.
+- public/documentos-fiscais.html: busca de documentos por periodo/CNPJ e exportacoes.
+- public/alterar-senha.html: alteracao de senha.
+- public/index.html: pagina inicial institucional.
 
-### Rotas de tela
+Arquivos JavaScript principais:
 
-- Home institucional: `/login`
-- Tela de acesso: `/acesso`
-- Painel de XML: `/dashboard`
+- public/login.js: login por e-mail, bootstrap de sessao e redirecionamento.
+- public/cadastro.js: wizard completo de cadastro, verificacao de e-mail, estado local e checkout.
+- public/dashboard.js: upload/listagem/filtro/download/exclusao de XML.
+- public/dashboard-home.js: validacao de sessao na home interna.
+- public/empresas.js: CRUD de empresa principal, upload de certificado, consulta de CEP.
+- public/empresas-secundarias.js: CRUD/consulta de secundarias e resumo de uso/plano.
+- public/relatorios.js: filtros, KPIs e visualizacao analitica das notas.
+- public/documentos-fiscais.js: consulta tabular por filtros e exportacao (Excel/ZIP/XML).
+- public/alterar-senha.js: chamada da API de troca de senha.
+- public/navbar.js: comportamento da navbar (dropdown, mobile, nome do usuario e logout).
+- public/app.js: legado de fluxo login+notas em pagina unica.
 
-## Login inicial (demo)
+Arquivos de estilo e PWA:
 
-- Codigo da empresa: `emil-demo`
-- Usuario: `admin`
-- Senha: `123456`
+- public/styles.css: tema e layout global.
+- public/sw.js: service worker (cache offline e estrategia de fetch).
+- public/manifest.webmanifest: manifesto PWA.
 
-## Login de teste
+### Dados locais (storage/)
 
-- Codigo da empresa: `xml-teste`
-- Usuario: `teste`
-- Senha: `teste123`
+- storage/companies.json
+	- Registro de empresas e usuarios.
+	- Base usada por login, cadastro e modulos administrativos.
 
-## Estrutura
+- storage/index.json
+	- Indice das notas fiscais (metadados para listagens e filtros).
 
-- `src/server.js`: API e servidor web
-- `src/xml-parser.js`: leitura dos campos de NFe
-- `src/storage.js`: persistencia do indice e arquivos
-- `public/`: frontend
-- `storage/xml/`: XMLs enviados
-- `storage/index.json`: metadados
+- storage/xml/
+	- Arquivos XML originais enviados pelos usuarios.
 
-## Transformar em APK (caminho recomendado)
+## Variaveis de ambiente importantes
 
-Opcao 1 (rapida): usar PWABuilder
-1. Publicar a aplicacao em um dominio (ex: https://seu-dominio)
-2. Acessar https://www.pwabuilder.com
-3. Informar a URL e gerar pacote Android
+### Aplicacao
 
-Opcao 2 (mais controle): usar Capacitor
-1. Separar frontend em build estatico
-2. Integrar com Capacitor Android
-3. Gerar APK pelo Android Studio
+- PORT: porta do servidor (padrao 3310).
+- APP_BASE_URL: URL base publica usada em links e callbacks.
 
-## Proximos passos sugeridos
+### E-mail
 
-- Login por usuario e permissoes
-- Banco de dados relacional (PostgreSQL)
-- Backup automatico dos XML
-- Dashboard de indicadores (quantidade, valor total, por emitente)
-- Importacao em lote (ZIP com varios XML)
-- Integracao com seus sistemas internos
+- EMAIL_PROVIDER: smtp ou resend.
+- SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM.
+- RESEND_API_KEY, RESEND_FROM_EMAIL.
+- EMAIL_CODE_TTL_MS: validade do codigo de verificacao.
+- EMAIL_ALLOW_ETHEREAL: fallback de inbox de teste via Ethereal.
 
-## Observacao importante
+### Mercado Pago (checkout de cadastro)
 
-Este MVP salva arquivos localmente. Para ambiente de producao, use armazenamento seguro, backup, trilha de auditoria e controle de acesso.
+- MERCADO_PAGO_ACCESS_TOKEN
+- MERCADO_PAGO_PUBLIC_KEY
+- MERCADO_PAGO_WEBHOOK_URL
+- MERCADO_PAGO_SUCCESS_URL
+- MERCADO_PAGO_PENDING_URL
+- MERCADO_PAGO_FAILURE_URL
+- CADASTRO_ALLOW_TEST_REUSE (uso de teste para reaproveitar identidade no sandbox)
+
+## Endpoints principais (resumido)
+
+- Autenticacao
+	- POST /api/auth/login
+	- GET /api/auth/me
+	- POST /api/auth/logout
+	- POST /api/auth/alterar-senha
+
+- Cadastro
+	- POST /api/cadastro/email/send-code
+	- POST /api/cadastro/email/verify-code
+	- GET /api/cadastro/payment-outline
+	- POST /api/cadastro/mercado-pago/checkout
+	- POST /api/cadastro
+
+- Notas fiscais
+	- POST /api/notas
+	- GET /api/notas
+	- GET /api/notas/:id/download
+	- DELETE /api/notas/:id
+
+- Empresas
+	- GET /api/empresas/me
+	- POST /api/empresas/principal
+	- POST /api/empresas/secundarias
+	- PUT /api/empresas/secundarias/:id
+	- DELETE /api/empresas/secundarias/:id
+
+## Credenciais de desenvolvimento
+
+- Demo:
+	- Codigo empresa: emil-demo
+	- Usuario: admin
+	- Senha: 123456
+
+- Teste:
+	- Codigo empresa: xml-teste
+	- Usuario: teste
+	- Senha: teste123
+
+## Observacoes
+
+- MVP com persistencia em JSON local (sem banco relacional).
+- Sessoes em memoria (reiniciar servidor invalida tokens).
+- Para producao, recomenda-se banco de dados, hash de senha, hardening de CORS e politica de backup/auditoria.
